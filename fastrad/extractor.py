@@ -40,6 +40,9 @@ class FeatureExtractor:
         if img_tensor.shape != mask_tensor.shape:
             raise ValueError(f"Image shape {img_tensor.shape} and mask shape {mask_tensor.shape} do not match.")
 
+        # Populate spacing for volume calculations
+        self.settings.spacing = image.spacing
+
         features = {}
         
         for feature_class in self.settings.feature_classes:
