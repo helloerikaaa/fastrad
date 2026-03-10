@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastrad"
+version = "0.1.0"
+description = "GPU-accelerated Python library that reimplements pyradiomics with full feature parity"
+readme = "README.md"
+authors = [
+    { name = "fastrad authors" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "torch",
+    "pydicom",
+    "numpy",
+    "scipy"
+]
+
+[project.optional-dependencies]
+cuda = [
+    "torch" # You'd typically just specify torch, relying on environment to grab the CUDA version, but we list it.
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["fastrad"]
