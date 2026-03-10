@@ -1,0 +1,130 @@
+import torch
+from .shape_tables import gridAngles, vertList, triTable
+
+def calculate_mesh_features(mask_tensor, spacing):
+    device = mask_tensor.device
+    
+    # Pre-load tables to CUDA if necessary
+    triTable_t = torch.tensor(triTable, device=device, dtype=torch.int64)
+    vertList_t = torch.tensor(vertList, device=device, dtype=torch.float32)
+    gridAngles_t = torch.tensor(gridAngles, device=device, dtype=torch.int64)
+    
+    # Build a cube index for each non-edge voxel
+    padded_mask = torch.zeros(
+        (mask_tensor.shape[0]+1, mask_tensor.shape[1]+1, mask_tensor.shape[2]+1), 
+        dtype=torch.uint8, device=device
+    )
+    padded_mask[:-1, :-1, :-1] = mask_tensor
+    
+    cube_idx = torch.zeros((mask_tensor.shape[0], mask_tensor.shape[1], mask_tensor.shape[2]), dtype=torch.uint8, device=device)
+    for a_idx in range(8):
+        c_z = gridAngles_t[a_idx][0]
+        c_y = gridAngles_t[a_idx][1]
+        c_x = gridAngles_t[a_idx][2]
+        
+        corner = padded_mask[
+            c_z:c_z+mask_tensor.shape[0],
+            c_y:c_y+mask_tensor.shape[1],
+            c_x:c_x+mask_tensor.shape[2]
+        ]
+        cube_idx |= (corner << a_idx)
+    
+    valid_cubes = (cube_idx > 0) & (cube_idx < 255)
+    active_indices = torch.nonzero(valid_cubes, as_tuple=True)
+    active_idxs = cube_idx[active_indices]
+    
+    # Apply symmetry mask: if >= 128, flip bits and sign
+    signs = torch.where(active_idxs >= 128, torch.tensor(-1.0, device=device), torch.tensor(1.0, device=device))
+    lookup_idxs = torch.where(active_idxs >= 128, active_idxs ^ 255, active_idxs).long()
+    
+    tri_data = triTable_t[lookup_idxs]
+    
+    total_area = 0.0
+    total_volume = 0.0
+    all_vertices_list = []
+    area_vector_sum = torch.zeros(3, device=device, dtype=torch.float64)
+    
+    spacing_t = torch.tensor(spacing, device=device, dtype=torch.float64)
+    # The offsets are active indices [Z, Y, X]
+    offsets = torch.stack(active_indices, dim=-1).to(torch.float64)
+    
+    # Iterate over max 5 triangles
+    for t in range(5):
+        v1_idx = tri_data[:, t*3]
+        valid_triangles = v1_idx >= 0
+        
+        if not valid_triangles.any():
+            continue
+        
+        v1_i = v1_idx[valid_triangles]
+        v2_i = tri_data[valid_triangles, t*3 + 1]
+        v3_i = tri_data[valid_triangles, t*3 + 2]
+        
+        v1 = vertList_t[v1_i]
+        v2 = vertList_t[v2_i]
+        v3 = vertList_t[v3_i]
+        
+        off = offsets[valid_triangles]
+        
+        # Coordinates
+        a = (v1 + off) * spacing_t
+        b = (v2 + off) * spacing_t
+        c = (v3 + off) * spacing_t
+        
+        # Area calculation: 0.5 * norm(cross_product(a-c, b-c))
+        ab_area = torch.cross(a - c, b - c, dim=1)
+        area = 0.5 * torch.norm(ab_area, dim=1)
+        
+        # volume calculation sum
+        ab_vol = torch.cross(a, b, dim=1)
+        vol = (ab_vol * c).sum(dim=1) * signs[valid_triangles]
+        
+        normals = 0.5 * torch.cross(b - a, c - a, dim=1)
+        # wait, pyradiomics might not use the outward normal consistently?
+        normals = normals * signs[valid_triangles].unsqueeze(1)
+        area_vector_sum += normals.sum(dim=0)
+        
+        total_area += area.sum().item()
+        total_volume += vol.sum().item()
+        
+        # Accumulate vertices to compute diameters later
+        all_vertices_list.append(a)
+        all_vertices_list.append(b)
+        all_vertices_list.append(c)
+        
+    if len(all_vertices_list) > 0:
+        all_vertices = torch.cat(all_vertices_list, dim=0)
+        unique_vertices = torch.unique(all_vertices, dim=0)
+        
+        # Compute pairwise distances
+        # dists will be shape (N, N)
+        dists = torch.cdist(unique_vertices, unique_vertices)
+        max_3d_diameter = dists.max().item()
+        
+        # For 2D diameters, we check pairwise elements that share the same coordinate
+        # PyRadiomics definition:
+        # diameter[0] -> a[0] == b[0] -> same Z -> Slice
+        # diameter[1] -> a[1] == b[1] -> same Y -> Column
+        # diameter[2] -> a[2] == b[2] -> same X -> Row
+        same_z = (unique_vertices[:, 0:1] == unique_vertices[:, 0:1].T)
+        max_2d_slice = torch.where(same_z, dists, torch.tensor(0.0, device=device)).max().item()
+        
+        same_y = (unique_vertices[:, 1:2] == unique_vertices[:, 1:2].T)
+        max_2d_col = torch.where(same_y, dists, torch.tensor(0.0, device=device)).max().item()
+        
+        same_x = (unique_vertices[:, 2:3] == unique_vertices[:, 2:3].T)
+        max_2d_row = torch.where(same_x, dists, torch.tensor(0.0, device=device)).max().item()
+    else:
+        max_3d_diameter = 0.0
+        max_2d_slice = 0.0
+        max_2d_col = 0.0
+        max_2d_row = 0.0
+
+    return {
+        "SurfaceArea": total_area,
+        "MeshVolume": total_volume / 6.0,
+        "Maximum3DDiameter": max_3d_diameter,
+        "Maximum2DDiameterSlice": max_2d_slice,
+        "Maximum2DDiameterColumn": max_2d_col,
+        "Maximum2DDiameterRow": max_2d_row
+    }
