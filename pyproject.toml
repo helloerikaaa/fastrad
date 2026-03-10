@@ -20,7 +20,12 @@ dependencies = [
 
 [project.optional-dependencies]
 cuda = [
-    "torch" # You'd typically just specify torch, relying on environment to grab the CUDA version, but we list it.
+    "torch"
+]
+test = [
+    "pytest",
+    "pyradiomics",
+    "SimpleITK"
 ]
 
 [tool.hatch.build.targets.wheel]
