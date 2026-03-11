@@ -73,16 +73,20 @@ extractor = FeatureExtractor(settings_gpu)
 features = extractor.execute(image, mask)
 ```
 
-## Benchmarks
-The repository contains a benchmarking suite that validates computation time. `fastrad` accelerates intensive texture matrix (GLSZM, GLCM, GLDM) constructions dramatically scaling with image dimensions. 
+## Benchmarks & Stability
+The repository contains a benchmarking suite that validates computation time and numeric stability. `fastrad` accelerates intensive texture matrix (GLSZM, GLCM, GLDM) constructions dramatically scaling with image dimensions.
+
+It also includes a feature stability analysis tool that performs test-retest validation, simulating minor 3D affine transformations and Gaussian noise to prove equivalent stability parity with PyRadiomics under perturbed imaging conditions.
+
 Run the benchmarks locally:
 
 ```bash
 python benchmarks/run_benchmark.py
+python benchmarks/fastrad_stability_analysis.py
 ```
 
 ## Running Tests
-Tests assert extraction values strictly adhere to the baseline output created by PyRadiomics to ensure fidelity for scientific rigor.
+Tests assert extraction values strictly adhere to the baseline output created by PyRadiomics to ensure fidelity for scientific rigor, including compliance with the IBSI (Image Biomarker Standardisation Initiative) phantom benchmarks.
 
 To run the test suite:
 ```bash
