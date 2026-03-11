@@ -7,3 +7,5 @@ class FeatureSettings:
     bin_width: float = 25.0
     device: str = "auto"
     spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)
+    force2D: bool = False
+    force2Ddimension: int = 0
