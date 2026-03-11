@@ -8,7 +8,7 @@ The primary advantage of using `fastrad` over traditional CPU-bound libraries is
 GPU Performance
 ---------------
 
-Below is a direct measurement comparing a standard `PyRadiomics` extraction against `fastrad` utilizing an NVIDIA GPU. 
+Below is a direct measurement comparing a standard `PyRadiomics` extraction against `fastrad` utilizing an NVIDIA GPU (Intel i9 14th Gen, RTX 4070 Ti, 96GB RAM). 
 
 *(Metrics taken from a 512x512 volumetric TCIA matrix using a custom 15mm-radius spherical ROI mask, comparing native single-threaded PyRadiomics feature calculation against `fastrad` PyTorch CUDA offloading)*
 
@@ -21,33 +21,56 @@ Below is a direct measurement comparing a standard `PyRadiomics` extraction agai
      - fastrad (CUDA)
      - Speedup
    * - Firstorder
-     - 2.33s
+     - 2.29s
      - 0.034s
-     - **69x**
+     - **68x**
    * - Shape
-     - 2.34s
+     - 2.33s
      - 0.063s
      - **37x**
    * - GLCM
      - 2.29s
-     - 0.073s
-     - **31x**
+     - 0.072s
+     - **32x**
    * - GLRLM
      - 2.29s
      - 0.078s
      - **29x**
-   * - GLDM
+   * - GLSZM
      - 2.30s
-     - 0.219s
-     - **10x**
+     - 0.271s
+     - **8.5x**
+   * - GLDM
+     - 2.29s
+     - 0.051s
+     - **45x**
    * - NGTDM
      - 2.29s
-     - 0.292s
-     - **8x**
-   * - **TOTAL (Excl. GLSZM)**
-     - **13.83s**
-     - **0.76s**
-     - **~18x**
+     - 0.058s
+     - **40x**
+   * - **TOTAL**
+     - **16.09s**
+     - **0.63s**
+     - **~25.7x**
+
+CPU Performance
+---------------
+
+Even without a dedicated GPU, `fastrad` natively optimizes matrix shifts and crops via tensor algorithms to cleanly exceed typical single-threaded PyRadiomics evaluation instances.
+
+.. list-table:: CPU Runtime Acceleration (TCIA 512x512 matrix)
+   :widths: 33 33 33
+   :header-rows: 1
+
+   * - Hardware Architecture
+     - PyRadiomics (1t)
+     - fastrad (1t)
+   * - Apple M3 Max (ARM)
+     - 17.0s
+     - 4.8s (**3.5x**)
+   * - Intel Core i9 14th Gen (x86)
+     - 16.1s
+     - 8.4s (**1.9x**)
 
 Optimizing GLSZM (cuCIM)
 ------------------------

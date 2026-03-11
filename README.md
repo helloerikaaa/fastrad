@@ -77,7 +77,9 @@ features = extractor.execute(image, mask)
 The repository contains a benchmarking suite that validates computation time and numeric stability. `fastrad` accelerates intensive texture matrix (GLSZM, GLCM, GLDM) constructions dramatically scaling with image dimensions.
 
 ### Performance Sample
-Comparing pure single-threaded CPU execution mapped against PyRadiomics 3.0 on a 512x512 volumetric TCIA matrix (`benchmarks/run_benchmark.py`):
+Comparing pure single-threaded CPU execution and CUDA acceleration mapped against PyRadiomics 3.0 on a 512x512 volumetric TCIA matrix (`benchmarks/run_benchmark.py`):
+
+**System 1: Apple M3 Max (ARM)**
 ```text
 --- PyRadiomics Benchmark ---
 PyRadiomics TOTAL       : 17.0s
@@ -85,7 +87,20 @@ PyRadiomics TOTAL       : 17.0s
 --- Fastrad Benchmark (CPU, 1 Thread) ---
 Fastrad CPU (1t) TOTAL  : 4.8s (3.5x speedup)
 ```
-*(Fastrad inherently parallelizes operations via PyTorch yielding over 2x speedups even on a single CPU thread, and scales natively via CUDA processing for up to 10-50x improvements on compatible GPUs)*
+
+**System 2: Intel Core i9 14th Gen & RTX 4070 Ti (x86/CUDA)**
+```text
+--- PyRadiomics Benchmark ---
+PyRadiomics TOTAL       : 16.1s
+
+--- Fastrad Benchmark (CPU, 1 Thread) ---
+Fastrad CPU (1t) TOTAL  : 8.4s (1.9x speedup)
+
+--- Fastrad Benchmark (CUDA GPU) ---
+Fastrad GPU TOTAL       : 0.6s (25.7x speedup)
+```
+
+*(Fastrad inherently parallelizes operations via PyTorch yielding nearly 2x to 3.5x speedups even on a single CPU thread, and scales natively via CUDA processing for up to 25x+ improvements on compatible GPUs)*
 
 It also includes a feature stability analysis tool that performs test-retest validation, simulating minor 3D affine transformations and Gaussian noise to prove equivalent stability parity with PyRadiomics under perturbed imaging conditions.
 
