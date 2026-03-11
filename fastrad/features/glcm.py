@@ -8,9 +8,12 @@ EPSILON = 1e-16
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    Ng = ivector.numel()
     if Ng == 0:
         return {}
+    
+    max_gl = int(torch.max(ivector).item())
         
     angles = [
         (0, 0, 1),
@@ -28,7 +31,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         (1, -1, -1)
     ]
     
-    P_glcm = torch.zeros((Ng, Ng, len(angles)), dtype=torch.float64, device=device)
+    P_glcm_raw = torch.zeros((max_gl, max_gl, len(angles)), dtype=torch.float64, device=device)
     
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
@@ -62,15 +65,15 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         val1 = img_int[z_v, y_v, x_v] - 1
         val2 = img_int[zs_v, ys_v, xs_v] - 1
         
-        linear_indices = val1 * Ng + val2
-        counts = torch.bincount(linear_indices, minlength=Ng*Ng).to(torch.float64)
-        
-        counts = counts[:Ng*Ng].view(Ng, Ng)
-        
+        linear_indices = val1 * max_gl + val2
+        counts = torch.bincount(linear_indices, minlength=max_gl*max_gl).to(torch.float64)
+        counts = counts[:max_gl*max_gl].view(max_gl, max_gl)
         counts_sym = counts + counts.T
+        P_glcm_raw[:, :, a_idx] = counts_sym
         
-        P_glcm[:, :, a_idx] = counts_sym
-
+    valid_idx = (ivector - 1).to(torch.int64)
+    P_glcm = P_glcm_raw[valid_idx][:, valid_idx]
+    
     sums = torch.sum(P_glcm, dim=(0, 1))
     valid_angles = sums > 0
     if not torch.any(valid_angles):
@@ -86,10 +89,10 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     px = torch.sum(p, dim=1)
     py = torch.sum(p, dim=0)
     
-    i_grid = torch.arange(1, Ng + 1, dtype=torch.float64, device=device).view(-1, 1, 1)
-    j_grid = torch.arange(1, Ng + 1, dtype=torch.float64, device=device).view(1, -1, 1)
+    i_grid = ivector.view(-1, 1, 1)
+    j_grid = ivector.view(1, -1, 1)
     
-    i_val = torch.arange(1, Ng + 1, dtype=torch.float64, device=device).view(-1, 1)
+    i_val = ivector.view(-1, 1)
     
     ux = torch.sum(i_grid * p, dim=(0, 1))
     uy = torch.sum(j_grid * p, dim=(0, 1))
@@ -142,17 +145,17 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     
     idm = torch.mean(torch.sum(p / (1 + i_minus_j ** 2), dim=(0, 1)))
     
-    idn = torch.mean(torch.sum(p / (1 + i_minus_j / Ng), dim=(0, 1)))
+    idn = torch.mean(torch.sum(p / (1 + i_minus_j / max_gl), dim=(0, 1)))
     
-    idmn = torch.mean(torch.sum(p / (1 + (i_minus_j ** 2) / (Ng ** 2)), dim=(0, 1)))
+    idmn = torch.mean(torch.sum(p / (1 + (i_minus_j ** 2) / (max_gl ** 2)), dim=(0, 1)))
     
     mask_ij = i_minus_j > 0
     inv_var = torch.mean(torch.sum(torch.where(mask_ij, p / (i_minus_j ** 2), torch.zeros_like(p)), dim=(0, 1)))
     
     sum_average = torch.mean(torch.sum(i_plus_j * p, dim=(0, 1)))
     
-    p_x_plus_y = torch.zeros((2 * Ng + 1, N_a), dtype=torch.float64, device=device)
-    p_x_minus_y = torch.zeros((Ng, N_a), dtype=torch.float64, device=device)
+    p_x_plus_y = torch.zeros((2 * max_gl + 1, N_a), dtype=torch.float64, device=device)
+    p_x_minus_y = torch.zeros((max_gl + 1, N_a), dtype=torch.float64, device=device)
     
     flat_p = p.reshape(-1, N_a)
     flat_plus = i_plus_j.expand(-1, -1, N_a).to(torch.int64).reshape(-1, N_a)
@@ -163,7 +166,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     
     diff_avg_a = torch.sum(i_minus_j * p, dim=(0,1))
     
-    k_minus = torch.arange(0, Ng, dtype=torch.float64, device=device).view(-1, 1)
+    k_minus = torch.arange(0, max_gl + 1, dtype=torch.float64, device=device).view(-1, 1)
     diff_var = torch.mean(torch.sum(((k_minus - diff_avg_a.view(1, -1)) ** 2) * p_x_minus_y, dim=0))
     
     p_x_minus_y_log = torch.where(p_x_minus_y > EPSILON, torch.log2(p_x_minus_y), torch.zeros_like(p_x_minus_y))

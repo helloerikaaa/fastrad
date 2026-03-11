@@ -6,7 +6,7 @@ EPSILON = 1e-16
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     # Extract voxels inside the mask
     # Mask is expected to be binary 0 or 1
-    voxels = image_tensor[mask_tensor > 0.5]
+    voxels = image_tensor[mask_tensor > 0.5].to(torch.float64)
     
     if voxels.numel() == 0:
         return {}

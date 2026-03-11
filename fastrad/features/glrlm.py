@@ -7,7 +7,8 @@ EPSILON = 1e-16
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    Ng = ivector.numel()
     if Ng == 0:
         return {}
         
@@ -100,7 +101,8 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         return {}
         
     N_a = len(angles)
-    P_glrlm = torch.zeros((Ng, Nr, N_a), dtype=torch.float64, device=device)
+    max_gl = int(torch.max(ivector).item())
+    P_glrlm_raw = torch.zeros((max_gl, Nr, N_a), dtype=torch.float64, device=device)
     
     for a_idx, (gray_levels, lengths) in enumerate(angle_results):
         if gray_levels.numel() == 0:
@@ -110,10 +112,13 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         l = lengths - 1
         
         linear_indices = g * Nr + l
-        counts = torch.bincount(linear_indices, minlength=Ng*Nr).to(torch.float64)
-        counts = counts[:Ng*Nr].view(Ng, Nr)
+        counts = torch.bincount(linear_indices, minlength=max_gl*Nr).to(torch.float64)
+        counts = counts[:max_gl*Nr].view(max_gl, Nr)
         
-        P_glrlm[:, :, a_idx] = counts
+        P_glrlm_raw[:, :, a_idx] = counts
+        
+    valid_idx = (ivector - 1).to(torch.int64)
+    P_glrlm = P_glrlm_raw[valid_idx, :, :]
         
     sums = torch.sum(P_glrlm, dim=(0, 1))
     valid_angles = sums > 0
@@ -130,7 +135,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     P = P_glrlm
     Ns = sums
     
-    i_grid = torch.arange(1, Ng + 1, dtype=torch.float64, device=device).view(-1, 1, 1)
+    i_grid = ivector.clone().to(device).view(-1, 1, 1)
     j_grid = torch.arange(1, Nr + 1, dtype=torch.float64, device=device).view(1, -1, 1)
     
     pg = torch.sum(P, dim=1)

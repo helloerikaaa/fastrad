@@ -65,12 +65,13 @@ def run():
     diff_stats = {}
     
     for k, fastrad_val in fastrad_features.items():
-        pyrad_key = k.replace(":", "_").lower()
+        c_name, f_name = k.split(":")
+        pyrad_key = f"{c_name}_{f_name.replace('_', '')}".lower()
         if pyrad_key in pyrad_features:
             pyrad_val = pyrad_features[pyrad_key]
             abs_diff = abs(fastrad_val - pyrad_val)
             
-            c_name = k.split("_")[0] if "_" in k else k.split(":")[0]
+            c_name = k.split(":")[0]
             
             if c_name not in diff_stats:
                 diff_stats[c_name] = {"diffs": [], "within": 0, "outside": 0, "outside_list": []}

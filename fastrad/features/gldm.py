@@ -7,7 +7,8 @@ EPSILON = 1e-16
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    Ng = ivector.numel()
     if Ng == 0:
         return {}
         
@@ -50,24 +51,27 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         
     valid_dep = dependence
     
-    Ng = int(torch.max(valid_gray).item())
     Nd = int(torch.max(valid_dep).item())
     
-    if Ng == 0 or Nd == 0:
+    if Nd == 0:
         return {}
         
     g = valid_gray - 1
     d = valid_dep - 1
     
+    max_gl = int(torch.max(ivector).item())
     linear_indices = g * Nd + d
-    matrix_counts = torch.bincount(linear_indices, minlength=Ng*Nd).to(torch.float64)
-    P = matrix_counts[:Ng*Nd].view(Ng, Nd)
+    matrix_counts = torch.bincount(linear_indices, minlength=max_gl*Nd).to(torch.float64)
+    P_raw = matrix_counts[:max_gl*Nd].view(max_gl, Nd)
+    
+    valid_idx = (ivector - 1).to(torch.int64)
+    P = P_raw[valid_idx, :]
     
     Ns = P.sum()
     if Ns == 0:
         return {}
         
-    i_grid = torch.arange(1, Ng + 1, dtype=torch.float64, device=device).view(-1, 1)
+    i_grid = ivector.clone().to(device).view(-1, 1)
     j_grid = torch.arange(1, Nd + 1, dtype=torch.float64, device=device).view(1, -1)
     
     pg = torch.sum(P, dim=1).view(-1, 1)

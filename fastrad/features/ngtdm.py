@@ -7,7 +7,7 @@ EPSILON = 1e-16
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
     M = mask_tensor > 0.5
@@ -65,20 +65,26 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     if final_valid_gray.numel() == 0:
         return {}
         
-    Ng = int(torch.max(final_valid_gray).item())
+    max_val = int(torch.max(final_valid_gray).item())
     
-    if Ng == 0:
+    if max_val == 0:
         return {}
         
-    n_i = torch.bincount(final_valid_gray, minlength=Ng+1).to(torch.float64)
-    s_i = torch.bincount(final_valid_gray, weights=final_s_i, minlength=Ng+1).to(torch.float64)
+    n_i = torch.bincount(final_valid_gray, minlength=max_val+1).to(torch.float64)
+    s_i = torch.bincount(final_valid_gray, weights=final_s_i, minlength=max_val+1).to(torch.float64)
     
     valid_mask = n_i > 0
-    ivector = torch.arange(0, Ng + 1, dtype=torch.float64, device=device)
+    ivector_actual = torch.arange(0, max_val + 1, dtype=torch.float64, device=device)
     
     n_i = n_i[valid_mask]
     s_i = s_i[valid_mask]
-    ivector = ivector[valid_mask]
+    # In order to fix NGTDM values, we map from the valid continuous indices back to to true `ivector`
+    # Here `ivector_actual[valid_mask]` will be `1, 2, ... Num(unique)`.
+    # Notice that mapping[raw_binned] in `get_binned_image` gave it values `1...Ng`. 
+    # But PyRadiomics uses the original true levels! Wait, we actually need to project back to the raw bins.
+    # We can just use the provided `ivector` array directly for `ivector_mapped` values!
+    # Because valid_mask matches the elements present in `ivector` EXACTLY!
+    ivector_mapped = ivector.clone().to(device)
     
     # Wait, does pyradiomics compute Nvp as sum of voxels with AT LEAST ONE neighbor?
     # Actually, as per PyRadiomics comment: "Nvp is the sum of n_i (i.e. the number of voxels with a valid region; at least 1 neighbor)."
@@ -105,7 +111,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     coarseness = 1.0 / sum_coarse if sum_coarse > 0 else torch.tensor(1e6, dtype=torch.float64, device=device)
     
     # Contrast
-    i_mat = ivector.view(-1, 1) - ivector.view(1, -1)
+    i_mat = ivector_mapped.view(-1, 1) - ivector_mapped.view(1, -1)
     pi_pj = p_i.view(-1, 1) * p_i.view(1, -1)
     
     if Ngp > 1:
@@ -117,7 +123,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     # PyRadiomics definition: sum(p_i * s_i) / sum_i(sum_j(|i*p_i - j*p_j|)) where p_i != 0 and p_j != 0
     pi_pj_mask = (p_i.view(-1, 1) > 0) & (p_i.view(1, -1) > 0)
     
-    i_pi = ivector * p_i
+    i_pi = ivector_mapped * p_i
     ipi_jpj = torch.abs(i_pi.view(-1, 1) - i_pi.view(1, -1))
     
     # Apply mask where p_i != 0 and p_j != 0

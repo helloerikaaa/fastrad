@@ -23,7 +23,8 @@ def _label_connected_components(mask_np: np.ndarray,
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    Ng = ivector.numel()
     if Ng == 0:
         return {}
         
@@ -76,18 +77,21 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     comp_gray = torch.zeros(N_c, dtype=img_int.dtype, device=device)
     comp_gray.scatter_(0, inverse_indices, valid_gray)
     
-    Ng = int(torch.max(comp_gray).item())
     Nz = int(torch.max(counts).item())
     
-    if Ng == 0 or Nz == 0:
+    if Nz == 0:
         return {}
         
     g = comp_gray - 1
     s = counts - 1
     
+    max_gl = int(torch.max(ivector).item())
     linear_indices = g * Nz + s
-    matrix_counts = torch.bincount(linear_indices, minlength=Ng*Nz).to(torch.float64)
-    P = matrix_counts[:Ng*Nz].view(Ng, Nz)
+    matrix_counts = torch.bincount(linear_indices, minlength=max_gl*Nz).to(torch.float64)
+    P_raw = matrix_counts[:max_gl*Nz].view(max_gl, Nz)
+    
+    valid_idx = (ivector - 1).to(torch.int64)
+    P = P_raw[valid_idx, :]
     
     Ns = P.sum()
     if Ns == 0:
@@ -95,7 +99,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         
     Np = voxels.numel()
     
-    i_grid = torch.arange(1, Ng + 1, dtype=torch.float64, device=device).view(-1, 1)
+    i_grid = ivector.clone().to(device).view(-1, 1)
     j_grid = torch.arange(1, Nz + 1, dtype=torch.float64, device=device).view(1, -1)
     
     pg = torch.sum(P, dim=1).view(-1, 1)
