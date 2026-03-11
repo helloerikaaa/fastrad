@@ -24,8 +24,9 @@ cuda = [
 ]
 test = [
     "pytest",
-    "pyradiomics",
-    "SimpleITK"
+    "pyradiomics @ git+https://github.com/AIM-Harvard/pyradiomics.git",
+    "SimpleITK",
+    "nibabel"
 ]
 
 [tool.hatch.build.targets.wheel]
