@@ -30,11 +30,35 @@ _FEATURE_MAP = {
 }
 
 class FeatureExtractor:
+    """
+    Main orchestration engine for radiomics feature extraction.
+    
+    The FeatureExtractor consumes a FeatureSettings configuration and executes
+    the specified feature class modules against a provided image and mask. 
+    It automatically routes tensors to the requested device (CPU, CUDA, MPS)
+    and handles OutOfMemory fallbacks gracefully.
+    """
     def __init__(self, settings: FeatureSettings):
+        """
+        Initializes the FeatureExtractor with the given settings.
+        
+        Args:
+            settings (FeatureSettings): Configuration defining which features to compute.
+        """
         self.settings = settings
         self.device = resolve_device(settings.device)
 
     def extract(self, image: MedicalImage, mask: Mask) -> dict[str, float]:
+        """
+        Executes feature extraction on the given Image and Mask.
+        
+        Args:
+            image (MedicalImage): The baseline medical volume.
+            mask (Mask): The binary Region of Interest mask.
+            
+        Returns:
+            dict[str, float]: A dictionary mapping feature names to their computed values.
+        """
         # Move tensors to target device
         img_tensor = image.tensor.to(self.device)
         mask_tensor = mask.tensor.to(self.device)

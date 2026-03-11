@@ -4,16 +4,39 @@ from typing import Union, Tuple
 from .utils.dicom import parse_dicom_dir
 
 class MedicalImage:
+    """
+    Representation of a continuous 3D medical volume (e.g., CT or MRI).
+    
+    Attributes:
+        tensor (torch.Tensor): The 3D image array as a PyTorch FloatTensor.
+        spacing (Tuple[float, float, float]): The physical voxel dimensions (z, y, x).
+    """
     def __init__(self, tensor: torch.Tensor, spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)):
         self.tensor = tensor
         self.spacing = spacing
 
     @classmethod
     def from_dicom(cls, path: Union[str, Path]) -> "MedicalImage":
+        """
+        Creates a MedicalImage from a directory containing DICOM slices.
+        
+        Args:
+            path: Path to the directory containing the DICOM files.
+            
+        Returns:
+            A new instantiated MedicalImage object with extracted spacing.
+        """
         tensor, spacing = parse_dicom_dir(path)
         return cls(tensor=tensor, spacing=spacing)
 
 class Mask:
+    """
+    Representation of a binary 3D Region of Interest (ROI) mask.
+    
+    Attributes:
+        tensor (torch.Tensor): The 3D binary mask array as a PyTorch FloatTensor.
+        spacing (Tuple[float, float, float]): The physical voxel dimensions (z, y, x).
+    """
     def __init__(self, tensor: torch.Tensor, spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)):
         # Ensure mask is binary (0 or 1)
         self.tensor = (tensor > 0).to(torch.float32)
@@ -21,6 +44,16 @@ class Mask:
 
     @classmethod
     def from_dicom(cls, path: Union[str, Path]) -> "Mask":
+        """
+        Creates a binary Mask from a directory containing DICOM slices.
+        Voxels strictly greater than 0 are set to 1.
+        
+        Args:
+            path: Path to the directory containing the DICOM ROIs.
+            
+        Returns:
+            A new instantiated binary Mask object with extracted spacing.
+        """
         tensor, spacing = parse_dicom_dir(path)
         return cls(tensor=tensor, spacing=spacing)
 
