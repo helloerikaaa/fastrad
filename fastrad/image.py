@@ -15,6 +15,10 @@ class MedicalImage:
         self.tensor = tensor
         self.spacing = spacing
 
+    def to(self, device: Union[str, torch.device]) -> "MedicalImage":
+        """Moves the underlying tensor to the specified device."""
+        return MedicalImage(self.tensor.to(device), self.spacing)
+
     @classmethod
     def from_dicom(cls, path: Union[str, Path]) -> "MedicalImage":
         """
@@ -41,6 +45,10 @@ class Mask:
         # Ensure mask is binary (0 or 1)
         self.tensor = (tensor > 0).to(torch.float32)
         self.spacing = spacing
+
+    def to(self, device: Union[str, torch.device]) -> "Mask":
+        """Moves the underlying tensor to the specified device."""
+        return Mask(self.tensor.to(device), self.spacing)
 
     @classmethod
     def from_dicom(cls, path: Union[str, Path]) -> "Mask":
