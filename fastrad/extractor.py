@@ -1,4 +1,5 @@
 import logging
+import warnings
 import torch
 from typing import Dict, Any, Callable
 from .settings import FeatureSettings
@@ -6,6 +7,9 @@ from .image import MedicalImage, Mask
 from .utils.device import resolve_device
 
 logger = logging.getLogger(__name__)
+
+# Filter the isotropic spacing warning so it only appears once per runtime.
+warnings.filterwarnings("once", message=".*is not isotropic.*")
 
 from .features import (
     compute_firstorder,
@@ -88,10 +92,12 @@ class FeatureExtractor:
         # 3. Non-Isotropic Spacing Check
         sp = image.spacing
         if max(sp) - min(sp) > 1e-3:
-            logger.warning(
+            warnings.warn(
                 f"Image spacing {sp} is not isotropic. "
                 "PyRadiomics guidelines recommend resampling to isotropic spacing "
-                "for robust textural feature calculation."
+                "for robust textural feature calculation.",
+                UserWarning,
+                stacklevel=2
             )
 
         features = {}
