@@ -117,12 +117,16 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     ux_m = torch.sum(i_val * px, dim=0)
     uy_m = torch.sum(i_val * py, dim=0)
     
-    sigmax = torch.sqrt(torch.sum(((i_val - ux_m.view(1, -1)) ** 2) * px, dim=0) + EPSILON)
-    sigmay = torch.sqrt(torch.sum(((i_val - uy_m.view(1, -1)) ** 2) * py, dim=0) + EPSILON)
+    var_x = torch.sum(((i_val - ux_m.view(1, -1)) ** 2) * px, dim=0)
+    var_y = torch.sum(((i_val - uy_m.view(1, -1)) ** 2) * py, dim=0)
     
-    correlation = torch.mean(
-        torch.sum((i_grid - ux_m.view(1, 1, -1)) * (j_grid - uy_m.view(1, 1, -1)) * p, dim=(0, 1)) / (sigmax * sigmay + EPSILON)
-    )
+    sigmax = torch.sqrt(var_x)
+    sigmay = torch.sqrt(var_y)
+    
+    corm = torch.sum((i_grid - ux_m.view(1, 1, -1)) * (j_grid - uy_m.view(1, 1, -1)) * p, dim=(0, 1))
+    corr = corm / (sigmax * sigmay + EPSILON)
+    corr[(sigmax * sigmay) == 0] = 1.0
+    correlation = torch.mean(corr)
     
     joint_average = torch.mean(ux)
     
@@ -190,7 +194,9 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     
     HXY = -torch.sum(p * p_log, dim=(0, 1))
     
-    imc1 = torch.mean((HXY - HXY1) / torch.max(HX, HY))
+    div = torch.max(HX, HY)
+    imc1_vals = torch.where(div > EPSILON, (HXY - HXY1) / div, torch.zeros_like(HXY))
+    imc1 = torch.mean(imc1_vals)
     imc2 = torch.mean(torch.sqrt(torch.clamp(1 - torch.exp(-2.0 * (HXY2 - HXY)), min=0.0)))
     
     mcc_list = []
@@ -203,7 +209,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         
         valid_idx = mask_x.nonzero().squeeze(-1)
         if valid_idx.numel() < 2:
-            mcc_list.append(0.0)
+            mcc_list.append(1.0)
             continue
             
         p_valid = p_a[valid_idx][:, valid_idx]
@@ -218,11 +224,11 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
             if len(evs) >= 2:
                 mcc_list.append(math.sqrt(evs[1].item()))
             else:
-                mcc_list.append(0.0)
+                mcc_list.append(1.0)
         except:
-            mcc_list.append(0.0)
+            mcc_list.append(1.0)
             
-    mcc = sum(mcc_list) / len(mcc_list) if mcc_list else 0.0
+    mcc = sum(mcc_list) / len(mcc_list) if mcc_list else 1.0
     
     features = {
         "glcm:contrast": contrast.item(),

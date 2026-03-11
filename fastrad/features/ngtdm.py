@@ -104,7 +104,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     
     # Coarseness
     sum_coarse = torch.sum(p_i * s_i)
-    coarseness = 1.0 / sum_coarse if sum_coarse > 0 else 1e6
+    coarseness = 1.0 / sum_coarse if sum_coarse > 0 else torch.tensor(1e6, dtype=torch.float64, device=device)
     
     # Contrast
     i_mat = ivector.view(-1, 1) - ivector.view(1, -1)
