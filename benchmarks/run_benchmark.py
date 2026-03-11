@@ -5,29 +5,54 @@ import SimpleITK as sitk
 from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 
-def generate_large_fixture(size=64):
-    np.random.seed(42)
-    image_vol = np.random.randint(0, 255, size=(size, size, size), dtype=np.uint16)
-    mask_vol = np.zeros((size, size, size), dtype=np.uint8)
-    
-    # Create a sphere mask
-    center = size // 2
-    radius = size // 4
-    z, y, x = np.ogrid[:size, :size, :size]
-    dist_sq = (x - center)**2 + (y - center)**2 + (z - center)**2
-    mask_vol[dist_sq <= radius**2] = 1
-    
-    return image_vol, mask_vol
+import argparse
+from pathlib import Path
 
-def run_benchmark():
-    print("Generating benchmark data (64x64x64 volume)...")
-    image_vol, mask_vol = generate_large_fixture(64)
+def create_spherical_mask(image_tensor: torch.Tensor, radius_mm: float, spacing: tuple[float, float, float]) -> torch.Tensor:
+    """Create a spherical mask in the center of the image, sized in millimeters."""
+    D, H, W = image_tensor.shape
+    center_z, center_y, center_x = D // 2, H // 2, W // 2
     
-    # 1. PyRadiomics setup
+    # Calculate radius in voxels for each dimension
+    r_z = max(1, int(radius_mm / spacing[0]))
+    r_y = max(1, int(radius_mm / spacing[1]))
+    r_x = max(1, int(radius_mm / spacing[2]))
+    
+    z, y, x = torch.meshgrid(
+        torch.arange(D, dtype=torch.float32),
+        torch.arange(H, dtype=torch.float32),
+        torch.arange(W, dtype=torch.float32),
+        indexing='ij'
+    )
+    
+    # Ellipsoid distance
+    dist_sq = ((z - center_z) / r_z)**2 + ((y - center_y) / r_y)**2 + ((x - center_x) / r_x)**2
+    
+    mask = torch.zeros_like(image_tensor, dtype=torch.float32)
+    mask[dist_sq <= 1.0] = 1.0
+    return mask
+
+def run_benchmark(image_dir: str):
+    print(f"Loading DICOM series from {image_dir}...")
+    
+    # Load via fastrad
+    fastrad_image = MedicalImage.from_dicom(image_dir)
+    img_t = fastrad_image.tensor
+    spacing = fastrad_image.spacing
+    
+    print(f"Image shape: {img_t.shape}, Spacing: {spacing}")
+    print("Generating 15mm radius synthetic tumor mask...")
+    mask_t = create_spherical_mask(img_t, radius_mm=15.0, spacing=spacing)
+    fastrad_mask = Mask(mask_t, spacing=spacing)
+    
+    # Convert exactly to what PyRadiomics expects
+    image_vol = img_t.numpy()
+    mask_vol = mask_t.numpy().astype(np.uint8)
+    
     sitk_image = sitk.GetImageFromArray(image_vol)
-    sitk_image.SetSpacing((1.0, 1.0, 1.0))
+    sitk_image.SetSpacing(spacing[::-1])  # PyRadiomics spacing is (X,Y,Z)
     sitk_mask = sitk.GetImageFromArray(mask_vol)
-    sitk_mask.SetSpacing((1.0, 1.0, 1.0))
+    sitk_mask.SetSpacing(spacing[::-1])
     
     feature_classes = ['firstorder', 'shape', 'glcm', 'glrlm', 'glszm', 'gldm', 'ngtdm']
     
@@ -50,31 +75,15 @@ def run_benchmark():
     
     # 2. Fastrad setup
     print("\n--- Fastrad Benchmark (CPU) ---")
-    img_t = torch.from_numpy(image_vol.astype(np.float32))
-    mask_t = torch.from_numpy(mask_vol.astype(np.float32))
     
     fastrad_times = {}
     
-    # Since fastrad has extractor designed for MedicalImage, we can modify it or bypass it
-    # We will test the extractor.py interface directly if it supports MedicalImage objects
-    # But MedicalImage loads from DICOM path. We can mock it or use the components directly.
-    # To be precise, let's use the individual feature modules directly or mock MedicalImage.
-    from fastrad.features import firstorder, shape, glcm, glrlm, glszm, gldm, ngtdm
-    modules = {
-        'firstorder': firstorder,
-        'shape': shape,
-        'glcm': glcm,
-        'glrlm': glrlm,
-        'glszm': glszm,
-        'gldm': gldm,
-        'ngtdm': ngtdm
-    }
-    
     for cls in feature_classes:
-        module = modules[cls]
-        settings = FeatureSettings(feature_classes=[cls], bin_width=25.0, device="cpu", spacing=(1.0, 1.0, 1.0))
+        settings = FeatureSettings(feature_classes=[cls], bin_width=25.0, device="cpu")
+        extractor = FeatureExtractor(settings)
+        
         t0 = time.time()
-        res = module.compute(img_t, mask_t, settings)
+        res = extractor.extract(fastrad_image, fastrad_mask)
         t1 = time.time()
         fastrad_times[cls] = t1 - t0
         print(f"Fastrad CPU {cls:<15}: {fastrad_times[cls]:.4f} seconds")
@@ -89,20 +98,18 @@ def run_benchmark():
     if torch.cuda.is_available():
         device_str = "cuda"
         print(f"\n--- Fastrad Benchmark ({device_str.upper()}) ---")
-        img_device = img_t.to(device_str)
-        mask_device = mask_t.to(device_str)
         
         fastrad_gpu_times = {}
         for cls in feature_classes:
-            module = modules[cls]
-            settings = FeatureSettings(feature_classes=[cls], bin_width=25.0, device=device_str, spacing=(1.0, 1.0, 1.0))
+            settings = FeatureSettings(feature_classes=[cls], bin_width=25.0, device=device_str)
+            extractor = FeatureExtractor(settings)
             
             # warmup pass
-            _ = module.compute(img_device, mask_device, settings)
+            _ = extractor.extract(fastrad_image, fastrad_mask)
             torch.cuda.synchronize()
                 
             t0 = time.time()
-            res = module.compute(img_device, mask_device, settings)
+            res = extractor.extract(fastrad_image, fastrad_mask)
             torch.cuda.synchronize()
             t1 = time.time()
             fastrad_gpu_times[cls] = t1 - t0
@@ -118,8 +125,20 @@ def run_benchmark():
 if __name__ == "__main__":
     import sys
     import os
+    
     # Add project root to sys.path
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
-    run_benchmark()
+        
+    parser = argparse.ArgumentParser(description="Run fastrad benchmark on a clinical DICOM dataset.")
+    parser.add_argument("--image-dir", type=str, help="Path to DICOM series directory",
+                        default=str(Path(project_root) / "tests" / "fixtures" / "tcia" / "images"))
+    args = parser.parse_args()
+    
+    if not os.path.exists(args.image_dir) or not os.listdir(args.image_dir):
+        print(f"Error: Could not find DICOM files in {args.image_dir}")
+        print("Please run 'python benchmarks/download_tcia_sample.py' first.")
+        sys.exit(1)
+        
+    run_benchmark(args.image_dir)
