@@ -32,7 +32,7 @@ def create_spherical_mask(image_tensor: torch.Tensor, radius_mm: float, spacing:
     mask[dist_sq <= 1.0] = 1.0
     return mask
 
-def run_benchmark(image_dir: str):
+def run_benchmark(image_dir: str, args):
     print(f"Loading DICOM series from {image_dir}...")
     
     # Load via fastrad
@@ -73,10 +73,11 @@ def run_benchmark(image_dir: str):
     pyrad_total = sum(pyrad_times.values())
     print(f"PyRadiomics TOTAL       : {pyrad_total:.4f} seconds")
     
-    # 2. Fastrad setup
-    print("\n--- Fastrad Benchmark (CPU) ---")
+    # 2. Fastrad setup (1 Thread)
+    print("\n--- Fastrad Benchmark (CPU, 1 Thread) ---")
+    torch.set_num_threads(1)
     
-    fastrad_times = {}
+    fastrad_times_1t = {}
     
     for cls in feature_classes:
         settings = FeatureSettings(feature_classes=[cls], bin_width=25.0, device="cpu")
@@ -85,16 +86,43 @@ def run_benchmark(image_dir: str):
         t0 = time.time()
         res = extractor.extract(fastrad_image, fastrad_mask)
         t1 = time.time()
-        fastrad_times[cls] = t1 - t0
-        print(f"Fastrad CPU {cls:<15}: {fastrad_times[cls]:.4f} seconds")
+        fastrad_times_1t[cls] = t1 - t0
+        print(f"Fastrad CPU (1t) {cls:<10}: {fastrad_times_1t[cls]:.4f} seconds")
         
-    fastrad_total = sum(fastrad_times.values())
-    print(f"Fastrad CPU TOTAL       : {fastrad_total:.4f} seconds")
+    fastrad_total_1t = sum(fastrad_times_1t.values())
+    print(f"Fastrad CPU (1t) TOTAL       : {fastrad_total_1t:.4f} seconds")
     
-    speedup_cpu = pyrad_total / fastrad_total
-    print(f"\nOverall Speedup (CPU)   : {speedup_cpu:.2f}x")
+    speedup_cpu_1t = pyrad_total / fastrad_total_1t
+    print(f"\nOverall Speedup (CPU, 1t)   : {speedup_cpu_1t:.2f}x")
     
-    # 3. Fastrad setup (CUDA)
+    # 3. Fastrad setup (N Threads)
+    # Determine thread count
+    num_threads = args.threads if hasattr(args, 'threads') and args.threads else torch.get_num_threads()
+    print(f"\n--- Fastrad Benchmark (CPU, {num_threads} Threads) ---")
+    torch.set_num_threads(num_threads)
+    
+    fastrad_times_nt = {}
+    
+    for cls in feature_classes:
+        settings = FeatureSettings(feature_classes=[cls], bin_width=25.0, device="cpu")
+        extractor = FeatureExtractor(settings)
+        
+        t0 = time.time()
+        res = extractor.extract(fastrad_image, fastrad_mask)
+        t1 = time.time()
+        fastrad_times_nt[cls] = t1 - t0
+        print(f"Fastrad CPU ({num_threads}t) {cls:<10}: {fastrad_times_nt[cls]:.4f} seconds")
+        
+    fastrad_total_nt = sum(fastrad_times_nt.values())
+    print(f"Fastrad CPU ({num_threads}t) TOTAL       : {fastrad_total_nt:.4f} seconds")
+    
+    speedup_cpu_nt = pyrad_total / fastrad_total_nt
+    print(f"\nOverall Speedup (CPU, {num_threads}t)   : {speedup_cpu_nt:.2f}x")
+    
+    # Reset to default
+    torch.set_num_threads(num_threads)
+    
+    # 4. Fastrad setup (CUDA)
     if torch.cuda.is_available():
         device_str = "cuda"
         print(f"\n--- Fastrad Benchmark ({device_str.upper()}) ---")
@@ -134,6 +162,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run fastrad benchmark on a clinical DICOM dataset.")
     parser.add_argument("--image-dir", type=str, help="Path to DICOM series directory",
                         default=str(Path(project_root) / "tests" / "fixtures" / "tcia" / "images"))
+    parser.add_argument("--threads", type=int, help="Number of CPU threads to use for PyTorch multi-threading benchmark (default: max available)", default=0)
     args = parser.parse_args()
     
     if not os.path.exists(args.image_dir) or not os.listdir(args.image_dir):
@@ -141,4 +170,4 @@ if __name__ == "__main__":
         print("Please run 'python benchmarks/download_tcia_sample.py' first.")
         sys.exit(1)
         
-    run_benchmark(args.image_dir)
+    run_benchmark(args.image_dir, args)
