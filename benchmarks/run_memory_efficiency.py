@@ -138,6 +138,7 @@ def run():
         mask_t = create_spherical_mask(img_t.shape, 15.0, spacing)
         f_mask = Mask(mask_t, spacing=spacing)
         
+        fastrad_img = MedicalImage(img_t, spacing=spacing)
         fastrad_img = fastrad_img.to("cuda")
         f_mask = f_mask.to("cuda")
         
