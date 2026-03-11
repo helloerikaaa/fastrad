@@ -11,8 +11,8 @@ def base_settings():
         device="cpu"
     )
 
-def test_empty_mask(base_settings, caplog):
-    """Test that an empty mask returns an empty dict and logs a warning."""
+def test_empty_mask(base_settings):
+    """Test that an empty mask raises a ValueError (PyRadiomics parity)."""
     image_tensor = torch.rand(10, 10, 10)
     mask_tensor = torch.zeros(10, 10, 10)
     
@@ -20,11 +20,8 @@ def test_empty_mask(base_settings, caplog):
     mask = Mask(tensor=mask_tensor)
     extractor = FeatureExtractor(base_settings)
     
-    with caplog.at_level(logging.WARNING):
-        features = extractor.extract(image, mask)
-        
-    assert features == {}
-    assert "Mask contains no positive voxels" in caplog.text
+    with pytest.raises(ValueError, match="Mask contains no positive voxels"):
+        extractor.extract(image, mask)
 
 def test_single_voxel_mask(base_settings, caplog):
     """Test that a single voxel mask evaluates without crashing, though features may be sparse/nan."""
@@ -43,7 +40,7 @@ def test_single_voxel_mask(base_settings, caplog):
     # We do not assert exact features here as they degrade gracefully (some may be nan or empty based on the module)
     assert isinstance(features, dict)
 
-def test_non_isotropic_spacing(base_settings, caplog):
+def test_non_isotropic_spacing(base_settings):
     """Test that non-isotropic spacing triggers a warning."""
     image_tensor = torch.rand(10, 10, 10)
     mask_tensor = torch.ones(10, 10, 10)
@@ -56,7 +53,5 @@ def test_non_isotropic_spacing(base_settings, caplog):
     settings = FeatureSettings(feature_classes=["firstorder"], bin_width=25, device="cpu")
     extractor = FeatureExtractor(settings)
     
-    with caplog.at_level(logging.WARNING):
+    with pytest.warns(UserWarning, match="is not isotropic"):
         extractor.extract(image, mask)
-        
-    assert "is not isotropic" in caplog.text

@@ -79,8 +79,7 @@ class FeatureExtractor:
         
         # 1. Empty Mask Check
         if mask_sum == 0:
-            logger.warning("Mask contains no positive voxels. Returning empty features.")
-            return {}
+            raise ValueError("Mask contains no positive voxels.")
             
         # 2. Single-Voxel ROI Check
         if mask_sum == 1:

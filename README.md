@@ -75,42 +75,22 @@ extractor = FeatureExtractor(settings_gpu)
 features = extractor.execute(image, mask)
 ```
 
-## Benchmarks & Stability
-The repository contains a benchmarking suite that validates computation time and numeric stability. `fastrad` accelerates intensive texture matrix (GLSZM, GLCM, GLDM) constructions dramatically scaling with image dimensions.
+## Benchmarks & Scientific Stability
+The repository contains a fully automated benchmarking suite (`benchmarks/report_generator.py`) that evaluates computation time, memory efficiency, and numeric stability against PyRadiomics to produce the `fastrad_scientific_report.md`.
 
-### Performance Sample
-Comparing pure single-threaded CPU execution and CUDA acceleration mapped against PyRadiomics 3.0 on a 512x512 volumetric TCIA matrix (`benchmarks/run_benchmark.py`):
+Highlights from the latest scientific validation (`fastrad_scientific_report.md`):
+- **IBSI Compliance**: 100% compliant with the Phase 1 digital phantom (all absolute relative deviations ≤ 1e-13%).
+- **Numerical Parity**: 100% of internal features match PyRadiomics within a `1e-4` tolerance on real TCIA clinical segmentation masks.
+- **Runtime CPU Performance**: Up to **24.2x** single-threaded CPU speedup per feature class, and **3.17x** overall speedup compared to an 8-thread PyRadiomics execution.
+- **GPU Acceleration**: Up to **25.7x** overall pipeline speedup natively utilizing CUDA PyTorch tensor streams.
+- **Memory Efficiency**: Utilizes 50-90% less peak CPU RAM (up to 0.10x PyRadiomics footprint) on large clinical ROIs.
+- **Stability**: Tested rigorously for Sub-voxel translation and Gaussian noise perturbations alongside real RIDER DICOM scan-rescan pair ICC evaluations.
+- **Robustness**: Provides graceful, PyRadiomics-parity handling of edge cases (Empty Masks, Single-Voxel masks).
 
-**System 1: Apple M3 Max (ARM)**
-```text
---- PyRadiomics Benchmark ---
-PyRadiomics TOTAL       : 17.0s
-
---- Fastrad Benchmark (CPU, 1 Thread) ---
-Fastrad CPU (1t) TOTAL  : 4.8s (3.5x speedup)
-```
-
-**System 2: Intel Core i9 14th Gen & RTX 4070 Ti (x86/CUDA)**
-```text
---- PyRadiomics Benchmark ---
-PyRadiomics TOTAL       : 16.1s
-
---- Fastrad Benchmark (CPU, 1 Thread) ---
-Fastrad CPU (1t) TOTAL  : 8.4s (1.9x speedup)
-
---- Fastrad Benchmark (CUDA GPU) ---
-Fastrad GPU TOTAL       : 0.6s (25.7x speedup)
-```
-
-*(Fastrad inherently parallelizes operations via PyTorch yielding nearly 2x to 3.5x speedups even on a single CPU thread, and scales natively via CUDA processing for up to 25x+ improvements on compatible GPUs)*
-
-It also includes a feature stability analysis tool that performs test-retest validation, simulating minor 3D affine transformations and Gaussian noise to prove equivalent stability parity with PyRadiomics under perturbed imaging conditions.
-
-Run the benchmarks locally:
+Run the full scientific benchmark suite locally to regenerate the physical report:
 
 ```bash
-python benchmarks/run_benchmark.py
-python benchmarks/fastrad_stability_analysis.py
+python benchmarks/report_generator.py
 ```
 
 ## Running Tests

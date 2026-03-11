@@ -178,8 +178,9 @@ def run():
     md.append(f"- **PyRadiomics ({max_t} Threads)**: {pr_tot_mt:.4f} s\n")
     md.append(f"- **fastrad (CPU, Single Thread)**: {fr_tot_st:.4f} s\n")
     speedup_honest = pr_tot_mt / fr_tot_st
-    md.append(f"\n=> **Comparative Advantage (fastrad 1t vs PyRadiomics {max_t}t)**: {speedup_honest:.2f}x speedup\n\n")
-    
+    md.append(f"\n=> **Comparative Advantage (fastrad 1t vs PyRadiomics {max_t}t)**: {speedup_honest:.2f}x speedup\n")
+    md.append("*Note: PyRadiomics is not internally parallelised at the feature computation level; threading only affects SimpleITK image operations. This explains the observed lack of scaling.*")
+    md.append("\n")
     return "\n".join(md)
 
 if __name__ == "__main__":
