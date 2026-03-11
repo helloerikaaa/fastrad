@@ -35,19 +35,24 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     if int(torch.max(img_int).item()) == 0:
         return {}
         
+    import scipy.ndimage
     import numpy as np
     
     img_np = img_int.cpu().numpy()
     
-    unique_gray = torch.unique(img_int[M]).cpu().numpy()
     current_max_label = 0
-    
     labels_tensor = torch.zeros(img_int.shape, dtype=torch.int64, device=device)
     
-    for g in unique_gray:
-        if g == 0:
+    # Rapid bounding box identification of all distinct gray levels
+    slices = scipy.ndimage.find_objects(img_np)
+    
+    for g_idx, g_slices in enumerate(slices):
+        if g_slices is None:
             continue
-        binary_mask = (img_np == g)
+            
+        g = g_idx + 1 # unique contiguous bins are 1-indexed
+        crop_img = img_np[g_slices]
+        binary_mask = (crop_img == g)
         
         labeled_mask = _label_connected_components(binary_mask, device)
         max_label = int(labeled_mask.max().item())
@@ -55,7 +60,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         if max_label > 0:
             mask_pos = labeled_mask > 0
             labeled_mask[mask_pos] += current_max_label
-            labels_tensor += labeled_mask
+            labels_tensor[g_slices] += labeled_mask
             current_max_label += max_label
             
     labels = labels_tensor            

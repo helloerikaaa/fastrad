@@ -16,6 +16,9 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     M = mask_tensor > 0.5
     if not torch.any(M):
         return {}
+    import torch.nn.functional as F
+    img_padded = F.pad(img_int, (1, 1, 1, 1, 1, 1), mode='constant', value=0)
+    img_active = M
         
     shifts = [
         (0, 0, 1), (0, 0, -1),
@@ -34,19 +37,9 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     dependence = torch.ones((D, H, W), dtype=torch.int64, device=device)
     
     for dz, dy, dx in shifts:
-        z1_tgt, z_tgt_end = max(0, dz), min(D, D + dz)
-        y1_tgt, y_tgt_end = max(0, dy), min(H, H + dy)
-        x1_tgt, x_tgt_end = max(0, dx), min(W, W + dx)
-        
-        z1_src, z_src_end = max(0, -dz), min(D, D - dz)
-        y1_src, y_src_end = max(0, -dy), min(H, H - dy)
-        x1_src, x_src_end = max(0, -dx), min(W, W - dx)
-        
-        mask_match = (img_int[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] == \
-                      img_int[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end]) & \
-                     (img_int[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] > 0)
-                     
-        dependence[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] += mask_match.to(torch.int64)
+        shifted_img = img_padded[1+dz:1+dz+D, 1+dy:1+dy+H, 1+dx:1+dx+W]
+        mask_match = (img_int == shifted_img) & img_active
+        dependence += mask_match.to(torch.int64)
         
     valid_gray = img_int[M]
     valid_dep = dependence[M]

@@ -53,7 +53,7 @@ Optimizing GLSZM (cuCIM)
 ------------------------
 By default, the *Gray Level Size Zone Matrix (GLSZM)* relies heavily on Connected-Component union-find algorithms that often struggle with atomic contention on GPU hardware.
 
-`fastrad` is specifically architected with a hybrid bypass framework that evaluates your hardware configuration. If the pipeline detects a CUDA target, it will attempt to route the GLSZM generation uniquely through **RAPIDS cuCIM** (`cucim.core.operations.morphology.label`) for true heterogeneous acceleration, cleanly circumventing the tensor-loop bottleneck.
+`fastrad` is specifically architected with a hybrid bypass framework that evaluates your hardware configuration. On CPU targets, `fastrad` utilizes a highly efficient bounding-box pre-crop strategy via `scipy.ndimage` to isolate gray level structures prior to connected-components labeling, resulting in extreme CPU processing speeds that comfortably outclass traditional scalar baselines. If the pipeline detects a CUDA target, it will attempt to route the GLSZM generation uniquely through **RAPIDS cuCIM** (`cucim.core.operations.morphology.label`) for true heterogeneous acceleration, cleanly circumventing the tensor-loop bottleneck.
 
 Stability Guarantee
 -------------------

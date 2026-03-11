@@ -8,15 +8,23 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     device = image_tensor.device
     
     binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
-    if Ng == 0:
-        return {}
-        
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
     M = mask_tensor > 0.5
     if not torch.any(M):
         return {}
-        
+    import torch.nn.functional as F
+    
+    img_float = img_int.to(torch.float64)
+    mask_float = M.to(torch.float64)
+    
+    img_padded = F.pad(img_float, (1, 1, 1, 1, 1, 1), mode='constant', value=0.0)
+    mask_padded = F.pad(mask_float, (1, 1, 1, 1, 1, 1), mode='constant', value=0.0)
+    
+    D, H, W = img_int.shape
+    neighbor_sums = torch.zeros_like(img_float)
+    neighbor_counts = torch.zeros_like(img_float, dtype=torch.int64)
+    
     shifts = [
         (0, 0, 1), (0, 0, -1),
         (0, 1, 0), (0, -1, 0),
@@ -30,35 +38,16 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         (-1, 1, 1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1),
     ]
     
-    D, H, W = img_int.shape
-    
-    neighbor_sums = torch.zeros((D, H, W), dtype=torch.float64, device=device)
-    neighbor_counts = torch.zeros((D, H, W), dtype=torch.int64, device=device)
-    
-    img_float = img_int.to(torch.float64)
-    
     for dz, dy, dx in shifts:
-        z1_tgt, z_tgt_end = max(0, dz), min(D, D + dz)
-        y1_tgt, y_tgt_end = max(0, dy), min(H, H + dy)
-        x1_tgt, x_tgt_end = max(0, dx), min(W, W + dx)
-        
-        z1_src, z_src_end = max(0, -dz), min(D, D - dz)
-        y1_src, y_src_end = max(0, -dy), min(H, H - dy)
-        x1_src, x_src_end = max(0, -dx), min(W, W - dx)
-        
-        mask_src = M[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end]
-        
-        neighbor_sums[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] += \
-            img_float[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end] * mask_src
-            
-        neighbor_counts[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] += mask_src.to(torch.int64)
-        
+        neighbor_sums += img_padded[1+dz:1+dz+D, 1+dy:1+dy+H, 1+dx:1+dx+W]
+        neighbor_counts += mask_padded[1+dz:1+dz+D, 1+dy:1+dy+H, 1+dx:1+dx+W].to(torch.int64)
+    
     s_i_voxel = torch.zeros_like(img_float)
     valid_neighbors = neighbor_counts > 0
     s_i_voxel[valid_neighbors] = torch.abs(img_float[valid_neighbors] - (neighbor_sums[valid_neighbors] / neighbor_counts[valid_neighbors].to(torch.float64)))
     
-    valid_gray = img_int[M & (neighbor_counts > 0)]
-    s_i_valid = s_i_voxel[M & (neighbor_counts > 0)]
+    valid_gray = img_int[M & valid_neighbors]
+    s_i_valid = s_i_voxel[M & valid_neighbors]
     
     if valid_gray.numel() == 0:
         return {}
