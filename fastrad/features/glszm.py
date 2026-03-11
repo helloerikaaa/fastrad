@@ -4,6 +4,22 @@ from fastrad.image import get_binned_image
 
 EPSILON = 1e-16
 
+import numpy as np
+
+def _label_connected_components(mask_np: np.ndarray, 
+                                device: torch.device) -> torch.Tensor:
+    structure = np.ones((3, 3, 3), dtype=int) if mask_np.ndim == 3 else np.ones((3, 3), dtype=int)
+    if device.type == "cuda":
+        try:
+            from cucim.core.operations.morphology import label as cucim_label
+            labeled = cucim_label(mask_np.astype("int32"), structure=structure)
+            return torch.from_numpy(np.asarray(labeled)).to(device)
+        except ImportError:
+            pass  # fall through to scipy
+    from scipy.ndimage import label as scipy_label
+    labeled, _ = scipy_label(mask_np, structure=structure)
+    return torch.from_numpy(labeled.astype("int32")).to(device)
+
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
@@ -19,49 +35,30 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     if int(torch.max(img_int).item()) == 0:
         return {}
         
-    D, H, W = img_int.shape
-    
-    import scipy.ndimage
     import numpy as np
     
     img_np = img_int.cpu().numpy()
-    labels_np = np.zeros_like(img_np, dtype=np.int64)
-    structure = np.ones((3, 3, 3), dtype=int)
     
     unique_gray = torch.unique(img_int[M]).cpu().numpy()
     current_max_label = 0
     
-    use_cucim = False
-    if device.type == "cuda":
-        try:
-            import cucim.core.operations.morphology as morph
-            use_cucim = True
-        except ImportError:
-            pass
-            
+    labels_tensor = torch.zeros(img_int.shape, dtype=torch.int64, device=device)
+    
     for g in unique_gray:
         if g == 0:
             continue
         binary_mask = (img_np == g)
         
-        num_features = 0
-        if use_cucim:
-            binary_mask_int32 = binary_mask.astype(np.int32)
-            try:
-                # CuCIM natively handles 3D numpy arrays, converting to cupy internally
-                labeled_mask = morph.label(binary_mask_int32, structure=structure)
-            except Exception:
-                labeled_mask = morph.label(binary_mask_int32)
-            num_features = int(labeled_mask.max())
-        else:
-            labeled_mask, num_features = scipy.ndimage.label(binary_mask, structure=structure)
+        labeled_mask = _label_connected_components(binary_mask, device)
+        max_label = int(labeled_mask.max().item())
             
-        if num_features > 0:
-            labeled_mask[labeled_mask > 0] += current_max_label
-            labels_np += labeled_mask
-            current_max_label += num_features
+        if max_label > 0:
+            mask_pos = labeled_mask > 0
+            labeled_mask[mask_pos] += current_max_label
+            labels_tensor += labeled_mask
+            current_max_label += max_label
             
-    labels = torch.from_numpy(labels_np).to(device)            
+    labels = labels_tensor            
     valid_labels = labels[M]
     valid_gray = img_int[M]
     

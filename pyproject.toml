@@ -20,7 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 cuda = [
-    "torch"
+    "torch>=2.0",
+    "cucim-cu12>=24.0"
 ]
 test = [
     "pytest",
