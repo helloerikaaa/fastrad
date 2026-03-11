@@ -1,21 +1,16 @@
 import torch
 from fastrad.settings import FeatureSettings
+from fastrad.image import get_binned_image
 
 EPSILON = 1e-16
 
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    voxels = image_tensor[mask_tensor > 0.5]
-    if voxels.numel() == 0:
+    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    if Ng == 0:
         return {}
         
-    bin_width = settings.bin_width
-    img_min = torch.min(image_tensor)
-    minimum_binned = torch.floor(img_min / bin_width) * bin_width
-    
-    binned_image = torch.floor((image_tensor - minimum_binned) / bin_width) + 1
-    
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
     M = mask_tensor > 0.5
@@ -62,10 +57,12 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     valid_neighbors = neighbor_counts > 0
     s_i_voxel[valid_neighbors] = torch.abs(img_float[valid_neighbors] - (neighbor_sums[valid_neighbors] / neighbor_counts[valid_neighbors].to(torch.float64)))
     
-    valid_gray = img_int[M]
-    s_i_valid = s_i_voxel[M]
-    n_i_valid = (neighbor_counts[M] > 0).to(torch.int64)
+    valid_gray = img_int[M & (neighbor_counts > 0)]
+    s_i_valid = s_i_voxel[M & (neighbor_counts > 0)]
     
+    if valid_gray.numel() == 0:
+        return {}
+        
     Ng = int(torch.max(valid_gray).item())
     
     if Ng == 0:
@@ -73,7 +70,6 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         
     n_i = torch.bincount(valid_gray, minlength=Ng+1).to(torch.float64)
     s_i = torch.bincount(valid_gray, weights=s_i_valid, minlength=Ng+1).to(torch.float64)
-    n_neighbors = torch.bincount(valid_gray, weights=n_i_valid.to(torch.float64), minlength=Ng+1).to(torch.float64)
     
     valid_mask = n_i > 0
     ivector = torch.arange(0, Ng + 1, dtype=torch.float64, device=device)
@@ -116,9 +112,17 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         contrast = torch.tensor(0.0, dtype=torch.float64, device=device)
         
     # Busyness
-    ipi_jpj = torch.abs(ivector.view(-1, 1) * p_i.view(-1, 1) - ivector.view(1, -1) * p_i.view(1, -1))
-    # Exclude i=j by setting diagonal to 0? The absdiff handles it (it's 0).
+    # PyRadiomics definition: sum(p_i * s_i) / sum_i(sum_j(|i*p_i - j*p_j|)) where p_i != 0 and p_j != 0
+    pi_pj_mask = (p_i.view(-1, 1) > 0) & (p_i.view(1, -1) > 0)
+    
+    i_pi = ivector * p_i
+    ipi_jpj = torch.abs(i_pi.view(-1, 1) - i_pi.view(1, -1))
+    
+    # Apply mask where p_i != 0 and p_j != 0
+    ipi_jpj = torch.where(pi_pj_mask, ipi_jpj, torch.zeros_like(ipi_jpj))
+    
     sum_absdiff = torch.sum(ipi_jpj)
+    
     busyness = torch.sum(p_i * s_i) / sum_absdiff if sum_absdiff > 0 else torch.tensor(0.0, dtype=torch.float64, device=device)
     
     # Complexity

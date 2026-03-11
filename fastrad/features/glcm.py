@@ -1,25 +1,14 @@
 import torch
 import math
 from fastrad.settings import FeatureSettings
+from fastrad.image import get_binned_image
 
 EPSILON = 1e-16
 
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    voxels = image_tensor[mask_tensor > 0.5]
-    if voxels.numel() == 0:
-        return {}
-        
-    bin_width = settings.bin_width
-    img_min = torch.min(image_tensor)
-    minimum_binned = torch.floor(img_min / bin_width) * bin_width
-    
-    binned_image = torch.floor((image_tensor - minimum_binned) / bin_width) + 1
-    
-    binned_voxels = binned_image[mask_tensor > 0.5]
-    Ng = int(torch.max(binned_voxels).item())
-    
+    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
     if Ng == 0:
         return {}
         
@@ -135,7 +124,9 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     p_log = torch.where(p > EPSILON, torch.log2(p), torch.zeros_like(p))
     joint_entropy = torch.mean(-torch.sum(p * p_log, dim=(0, 1)))
     
-    autocorrelation = torch.mean(torch.sum(i_grid * j_grid * p, dim=(0, 1)))
+    # Needs to match PyRadiomics exactly. i_grid is (Ng, 1, 1). j_grid is (1, Ng, 1). p is (Ng, Ng, N_a).
+    ac_per_angle = torch.sum(i_grid * j_grid * p, dim=(0, 1))
+    autocorrelation = torch.mean(ac_per_angle)
     
     cluster_prominence = torch.mean(torch.sum(((i_grid + j_grid - ux.view(1, 1, -1) - uy.view(1, 1, -1)) ** 4) * p, dim=(0, 1)))
     

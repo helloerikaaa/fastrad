@@ -1,21 +1,16 @@
 import torch
 from fastrad.settings import FeatureSettings
+from fastrad.image import get_binned_image
 
 EPSILON = 1e-16
 
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
-    voxels = image_tensor[mask_tensor > 0.5]
-    if voxels.numel() == 0:
+    binned_image, Ng = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
+    if Ng == 0:
         return {}
         
-    bin_width = settings.bin_width
-    img_min = torch.min(image_tensor)
-    minimum_binned = torch.floor(img_min / bin_width) * bin_width
-    
-    binned_image = torch.floor((image_tensor - minimum_binned) / bin_width) + 1
-    
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
     M = mask_tensor > 0.5
