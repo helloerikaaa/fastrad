@@ -155,7 +155,7 @@ def run():
             
             peak_bytes = torch.cuda.max_memory_allocated()
             return peak_bytes / (1024**2)
-            
+        classes = ["firstorder", "shape", "glcm", "glrlm", "glszm", "gldm", "ngtdm"]
         for cls in classes:
             vram = profile_vram([cls])
             md.append(f"| {cls} | {vram:.2f} |")
