@@ -31,12 +31,8 @@ To install with CUDA-specific optional dependencies:
 
    pip install ".[cuda]"
 
-Optional: cuCIM for GLSZM Acceleration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cuCIM for GLSZM Acceleration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The Gray Level Size Zone Matrix (GLSZM) relies on Connected-Component labeling. `fastrad` uses a hyper-optimized hybrid pipeline for this. 
 
-If running on CPU, `fastrad` uses the highly optimized C-backed `scipy.ndimage.label`. However, if you are executing on a CUDA GPU, installing **cuCIM** (RAPIDS) allows `fastrad` to natively keep the connected-component computations on the GPU without memory transfer penalties:
-
-.. code-block:: bash
-
-   pip install cucim
+If running on CPU, `fastrad` uses the highly optimized C-backed `scipy.ndimage.label`. However, if you are executing on a CUDA GPU, the **cuCIM** (RAPIDS) dependency is automatically installed via the `[cuda]` extension, allowing `fastrad` to natively keep the connected-component computations on the GPU without memory transfer penalties.
