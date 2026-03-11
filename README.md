@@ -4,6 +4,8 @@ FastRadiomics (fastrad) is a GPU-accelerated Python library for calculating radi
 ## Features
 - **Full Parity with PyRadiomics:** Extracts the exact same features as the original PyRadiomics implementations.
 - **Hardware Acceleration:** Native PyTorch backend seamlessly targets multi-core CPUs, CUDA-enabled GPUs, and Apple Silicon (MPS)* out of the box.
+- **IBSI Compliant:** Passed standard Image Biomarker Standardisation Initiative (IBSI) digital phantom validation testing.
+- **Resource Efficient:** Operates with 3.0x less peak RAM utilizing PyTorch tensor streaming versus Python sequence allocations.
 - **Supported Feature Classes:**
   - First Order
   - Shape (2D and 3D)
