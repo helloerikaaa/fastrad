@@ -1,8 +1,11 @@
+import logging
 import torch
 from typing import Dict, Any, Callable
 from .settings import FeatureSettings
 from .image import MedicalImage, Mask
 from .utils.device import resolve_device
+
+logger = logging.getLogger(__name__)
 
 from .features import (
     compute_firstorder,
@@ -51,11 +54,37 @@ class FeatureExtractor:
             
             compute_fn = _FEATURE_MAP[feature_class]
             
-            class_features = compute_fn(
-                image_tensor=img_tensor,
-                mask_tensor=mask_tensor,
-                settings=self.settings
-            )
+            try:
+                class_features = compute_fn(
+                    image_tensor=img_tensor,
+                    mask_tensor=mask_tensor,
+                    settings=self.settings
+                )
+            except torch.cuda.OutOfMemoryError:
+                if self.device.type == "cuda":
+                    logger.warning(
+                        f"CUDA OutOfMemoryError caught while extracting {feature_class} features. "
+                        f"Falling back to CPU computation for this feature class."
+                    )
+                    # Clear CUDA cache
+                    torch.cuda.empty_cache()
+                    
+                    # Move tensors to CPU explicitly for this computation
+                    cpu_img_tensor = img_tensor.cpu()
+                    cpu_mask_tensor = mask_tensor.cpu()
+                    
+                    # Compute on CPU
+                    class_features = compute_fn(
+                        image_tensor=cpu_img_tensor,
+                        mask_tensor=cpu_mask_tensor,
+                        settings=self.settings
+                    )
+                    
+                    # Free up CPU memory
+                    del cpu_img_tensor
+                    del cpu_mask_tensor
+                else:
+                    raise
             
             features.update(class_features)
             
