@@ -16,13 +16,20 @@ URL_IMAGE = "https://github.com/theibsi/data_sets/raw/main/ibsi_1_digital_phanto
 URL_MASK = "https://github.com/theibsi/data_sets/raw/main/ibsi_1_digital_phantom/nifti/mask/mask.nii.gz"
 URL_REF = "https://raw.githubusercontent.com/theibsi/data_sets/main/ibsi_1_digital_phantom/reference/features/ibsi_1_digital_phantom_reference_features.csv" # Not used anymore
 
-def download_if_needed(url: str, filepath: Path):
+def download_if_needed(url: str, filepath: Path) -> bool:
     if not filepath.exists():
         print(f"Downloading {filepath.name} from {url}")
-        urllib.request.urlretrieve(url, filepath)
+        try:
+            urllib.request.urlretrieve(url, filepath)
+            return True
+        except Exception as e:
+            print(f"Failed to download {url}: {e}")
+            return False
+    return True
 
 def setup_module(module):
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    # Don't throw errors in setup if download fails, we will skip in the test
     download_if_needed(URL_IMAGE, FIXTURE_DIR / "phantom.nii.gz")
     download_if_needed(URL_MASK, FIXTURE_DIR / "mask.nii.gz")
 
@@ -38,8 +45,14 @@ def load_reference_data():
 
 def test_ibsi_compliance():
     # Load phantom
-    img_ni = nib.load(str(FIXTURE_DIR / "phantom.nii.gz"))
-    mask_ni = nib.load(str(FIXTURE_DIR / "mask.nii.gz"))
+    img_path = FIXTURE_DIR / "phantom.nii.gz"
+    mask_path = FIXTURE_DIR / "mask.nii.gz"
+    
+    if not img_path.exists() or not mask_path.exists():
+        pytest.skip("IBSI digital phantom files not found and could not be downloaded. Skipping compliance test.")
+        
+    img_ni = nib.load(str(img_path))
+    mask_ni = nib.load(str(mask_path))
     
     # nibabel loads data as (X, Y, Z). PyRadiomics/fastrad uses (Z, Y, X)
     img_data = np.transpose(img_ni.get_fdata(), (2, 1, 0))
