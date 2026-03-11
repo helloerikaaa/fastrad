@@ -46,6 +46,30 @@ class FeatureExtractor:
         # Populate spacing for volume calculations
         self.settings.spacing = image.spacing
 
+        # Robustness Checks
+        mask_sum = mask_tensor.sum().item()
+        
+        # 1. Empty Mask Check
+        if mask_sum == 0:
+            logger.warning("Mask contains no positive voxels. Returning empty features.")
+            return {}
+            
+        # 2. Single-Voxel ROI Check
+        if mask_sum == 1:
+            logger.warning(
+                "Mask contains exactly one positive voxel. "
+                "Many spatial and textural features cannot be computed validly."
+            )
+            
+        # 3. Non-Isotropic Spacing Check
+        sp = image.spacing
+        if max(sp) - min(sp) > 1e-3:
+            logger.warning(
+                f"Image spacing {sp} is not isotropic. "
+                "PyRadiomics guidelines recommend resampling to isotropic spacing "
+                "for robust textural feature calculation."
+            )
+
         features = {}
         
         for feature_class in self.settings.feature_classes:
