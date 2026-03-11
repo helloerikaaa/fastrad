@@ -209,3 +209,6 @@ __marimo__/
 # Test Fixtures (Large DICOM files)
 tests/fixtures/
 .DS_Store
+
+# Sphinx docs
+docs/_build/

@@ -28,6 +28,15 @@ test = [
     "SimpleITK",
     "nibabel"
 ]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "myst-parser>=2.0.0",
+    "sphinx-autodoc-typehints>=1.20.0"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["fastrad"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
