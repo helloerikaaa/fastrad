@@ -24,44 +24,67 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         
     D, H, W = img_int.shape
     
-    labels = torch.arange(1, M.numel() + 1, device=device).view(M.shape)
-    labels = labels * M
-    
-    shifts = [
-        (0, 0, 1), (0, 1, 0), (0, 1, 1), (0, 1, -1),
-        (1, 0, 0), (1, 0, 1), (1, 0, -1),
-        (1, 1, 0), (1, 1, 1), (1, 1, -1),
-        (1, -1, 0), (1, -1, 1), (1, -1, -1)
-    ]
-    
-    changed = True
-    while changed:
-        old_labels = labels.clone()
+    if device.type == "cpu":
+        import scipy.ndimage
+        import numpy as np
         
-        for dz, dy, dx in shifts:
-            z1_tgt, z_tgt_end = max(0, dz), min(D, D + dz)
-            y1_tgt, y_tgt_end = max(0, dy), min(H, H + dy)
-            x1_tgt, x_tgt_end = max(0, dx), min(W, W + dx)
-            
-            z1_src, z_src_end = max(0, -dz), min(D, D - dz)
-            y1_src, y_src_end = max(0, -dy), min(H, H - dy)
-            x1_src, x_src_end = max(0, -dx), min(W, W - dx)
-            
-            mask_match = (img_int[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] == \
-                          img_int[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end]) & \
-                         (img_int[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] > 0)
-                         
-            labels_tgt = labels[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end]
-            labels_src = labels[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end]
-            
-            max_vals = torch.where(mask_match, torch.max(labels_tgt, labels_src), labels_tgt)
-            max_vals_src = torch.where(mask_match, torch.max(labels_tgt, labels_src), labels_src)
-            
-            labels[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] = torch.max(labels_tgt, max_vals)
-            labels[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end] = torch.max(labels_src, max_vals_src)
-            
-        changed = not torch.equal(labels, old_labels)
+        img_np = img_int.numpy()
+        labels_np = np.zeros_like(img_np, dtype=np.int64)
+        structure = np.ones((3, 3, 3), dtype=int)
         
+        unique_gray = torch.unique(img_int[M]).numpy()
+        current_max_label = 0
+        
+        for g in unique_gray:
+            if g == 0:
+                continue
+            binary_mask = (img_np == g)
+            labeled_mask, num_features = scipy.ndimage.label(binary_mask, structure=structure)
+            if num_features > 0:
+                labeled_mask[labeled_mask > 0] += current_max_label
+                labels_np += labeled_mask
+                current_max_label += num_features
+                
+        labels = torch.from_numpy(labels_np)
+    else:
+        labels = torch.arange(1, M.numel() + 1, device=device).view(M.shape)
+        labels = labels * M
+        
+        shifts = [
+            (0, 0, 1), (0, 1, 0), (0, 1, 1), (0, 1, -1),
+            (1, 0, 0), (1, 0, 1), (1, 0, -1),
+            (1, 1, 0), (1, 1, 1), (1, 1, -1),
+            (1, -1, 0), (1, -1, 1), (1, -1, -1)
+        ]
+        
+        changed = True
+        while changed:
+            old_labels = labels.clone()
+            
+            for dz, dy, dx in shifts:
+                z1_tgt, z_tgt_end = max(0, dz), min(D, D + dz)
+                y1_tgt, y_tgt_end = max(0, dy), min(H, H + dy)
+                x1_tgt, x_tgt_end = max(0, dx), min(W, W + dx)
+                
+                z1_src, z_src_end = max(0, -dz), min(D, D - dz)
+                y1_src, y_src_end = max(0, -dy), min(H, H - dy)
+                x1_src, x_src_end = max(0, -dx), min(W, W - dx)
+                
+                mask_match = (img_int[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] == \
+                              img_int[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end]) & \
+                             (img_int[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] > 0)
+                             
+                labels_tgt = labels[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end]
+                labels_src = labels[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end]
+                
+                max_vals = torch.where(mask_match, torch.max(labels_tgt, labels_src), labels_tgt)
+                max_vals_src = torch.where(mask_match, torch.max(labels_tgt, labels_src), labels_src)
+                
+                labels[z1_tgt:z_tgt_end, y1_tgt:y_tgt_end, x1_tgt:x_tgt_end] = torch.max(labels_tgt, max_vals)
+                labels[z1_src:z_src_end, y1_src:y_src_end, x1_src:x_src_end] = torch.max(labels_src, max_vals_src)
+                
+            changed = not torch.equal(labels, old_labels)
+            
     valid_labels = labels[M]
     valid_gray = img_int[M]
     
