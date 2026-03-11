@@ -212,3 +212,4 @@ tests/fixtures/
 
 # Sphinx docs
 docs/_build/
+fastrad_scientific_report.md
