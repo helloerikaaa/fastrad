@@ -80,10 +80,10 @@ The repository contains a benchmarking suite that validates computation time and
 Comparing pure single-threaded CPU execution mapped against PyRadiomics 3.0 on a 512x512 volumetric TCIA matrix (`benchmarks/run_benchmark.py`):
 ```text
 --- PyRadiomics Benchmark ---
-PyRadiomics TOTAL       : 22.2s
+PyRadiomics TOTAL       : 17.0s
 
 --- Fastrad Benchmark (CPU, 1 Thread) ---
-Fastrad CPU (1t) TOTAL  : 10.4s (2.1x speedup)
+Fastrad CPU (1t) TOTAL  : 4.8s (3.5x speedup)
 ```
 *(Fastrad inherently parallelizes operations via PyTorch yielding over 2x speedups even on a single CPU thread, and scales natively via CUDA processing for up to 10-50x improvements on compatible GPUs)*
 

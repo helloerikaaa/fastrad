@@ -11,9 +11,14 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
     M = mask_tensor > 0.5
-    if not torch.any(M):
-        return {}
+    
     import torch.nn.functional as F
+    
+    valid_coords = torch.nonzero(M, as_tuple=True)
+    valid_gray = img_int[valid_coords]
+    
+    if valid_gray.numel() == 0:
+        return {}
     
     img_float = img_int.to(torch.float64)
     mask_float = M.to(torch.float64)
@@ -21,9 +26,13 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     img_padded = F.pad(img_float, (1, 1, 1, 1, 1, 1), mode='constant', value=0.0)
     mask_padded = F.pad(mask_float, (1, 1, 1, 1, 1, 1), mode='constant', value=0.0)
     
-    D, H, W = img_int.shape
-    neighbor_sums = torch.zeros_like(img_float)
-    neighbor_counts = torch.zeros_like(img_float, dtype=torch.int64)
+    z = valid_coords[0] + 1
+    y = valid_coords[1] + 1
+    x = valid_coords[2] + 1
+    
+    N_v = valid_gray.shape[0]
+    neighbor_sums = torch.zeros(N_v, dtype=torch.float64, device=device)
+    neighbor_counts = torch.zeros(N_v, dtype=torch.int64, device=device)
     
     shifts = [
         (0, 0, 1), (0, 0, -1),
@@ -39,26 +48,30 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     ]
     
     for dz, dy, dx in shifts:
-        neighbor_sums += img_padded[1+dz:1+dz+D, 1+dy:1+dy+H, 1+dx:1+dx+W]
-        neighbor_counts += mask_padded[1+dz:1+dz+D, 1+dy:1+dy+H, 1+dx:1+dx+W].to(torch.int64)
+        neighbor_sums += img_padded[z + dz, y + dy, x + dx]
+        neighbor_counts += mask_padded[z + dz, y + dy, x + dx].to(torch.int64)
     
-    s_i_voxel = torch.zeros_like(img_float)
     valid_neighbors = neighbor_counts > 0
-    s_i_voxel[valid_neighbors] = torch.abs(img_float[valid_neighbors] - (neighbor_sums[valid_neighbors] / neighbor_counts[valid_neighbors].to(torch.float64)))
+    s_i_valid = torch.zeros(N_v, dtype=torch.float64, device=device)
     
-    valid_gray = img_int[M & valid_neighbors]
-    s_i_valid = s_i_voxel[M & valid_neighbors]
+    s_i_valid[valid_neighbors] = torch.abs(
+        valid_gray[valid_neighbors].to(torch.float64) - 
+        (neighbor_sums[valid_neighbors] / neighbor_counts[valid_neighbors].to(torch.float64))
+    )
     
-    if valid_gray.numel() == 0:
+    final_valid_gray = valid_gray[valid_neighbors]
+    final_s_i = s_i_valid[valid_neighbors]
+    
+    if final_valid_gray.numel() == 0:
         return {}
         
-    Ng = int(torch.max(valid_gray).item())
+    Ng = int(torch.max(final_valid_gray).item())
     
     if Ng == 0:
         return {}
         
-    n_i = torch.bincount(valid_gray, minlength=Ng+1).to(torch.float64)
-    s_i = torch.bincount(valid_gray, weights=s_i_valid, minlength=Ng+1).to(torch.float64)
+    n_i = torch.bincount(final_valid_gray, minlength=Ng+1).to(torch.float64)
+    s_i = torch.bincount(final_valid_gray, weights=final_s_i, minlength=Ng+1).to(torch.float64)
     
     valid_mask = n_i > 0
     ivector = torch.arange(0, Ng + 1, dtype=torch.float64, device=device)

@@ -14,11 +14,19 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     img_int = binned_image.to(torch.int64) * (mask_tensor > 0.5)
     
     M = mask_tensor > 0.5
-    if not torch.any(M):
-        return {}
     import torch.nn.functional as F
+    
+    valid_coords = torch.nonzero(M, as_tuple=True)
+    valid_gray = img_int[valid_coords]
+    
+    if valid_gray.numel() == 0:
+        return {}
+        
     img_padded = F.pad(img_int, (1, 1, 1, 1, 1, 1), mode='constant', value=0)
-    img_active = M
+    
+    z = valid_coords[0] + 1
+    y = valid_coords[1] + 1
+    x = valid_coords[2] + 1
         
     shifts = [
         (0, 0, 1), (0, 0, -1),
@@ -33,16 +41,14 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         (-1, 1, 1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1),
     ]
     
-    D, H, W = img_int.shape
-    dependence = torch.ones((D, H, W), dtype=torch.int64, device=device)
+    dependence = torch.ones(valid_gray.shape[0], dtype=torch.int64, device=device)
     
     for dz, dy, dx in shifts:
-        shifted_img = img_padded[1+dz:1+dz+D, 1+dy:1+dy+H, 1+dx:1+dx+W]
-        mask_match = (img_int == shifted_img) & img_active
+        neighbor_vals = img_padded[z + dz, y + dy, x + dx]
+        mask_match = (valid_gray == neighbor_vals)
         dependence += mask_match.to(torch.int64)
         
-    valid_gray = img_int[M]
-    valid_dep = dependence[M]
+    valid_dep = dependence
     
     Ng = int(torch.max(valid_gray).item())
     Nd = int(torch.max(valid_dep).item())
