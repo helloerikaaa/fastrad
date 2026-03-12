@@ -12,10 +12,14 @@ def _label_connected_components(mask_np: np.ndarray,
     if device.type == "cuda":
         try:
             from cucim.core.operations.morphology import label as cucim_label
-            labeled = cucim_label(mask_np.astype("int32"), structure=structure)
-            return torch.from_numpy(np.asarray(labeled)).to(device)
-        except ImportError:
+            import cupy as cp
+            mask_cp = cp.asarray(mask_np.astype("int32"))
+            labeled = cucim_label(mask_cp, structure=structure)
+            return torch.from_dlpack(labeled.toDlpack()).to(device)
+        except Exception as e:
+            print(f"DEBUG: cuCIM dispatch failed: {e}")
             pass  # fall through to scipy
+            
     from scipy.ndimage import label as scipy_label
     labeled, _ = scipy_label(mask_np, structure=structure)
     return torch.from_numpy(labeled.astype("int32")).to(device)
@@ -39,9 +43,9 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     import scipy.ndimage
     import numpy as np
     
-    mapped_int = torch.zeros_like(img_int)
-    for i, raw_bin in enumerate(ivector.to(torch.int64)):
-        mapped_int[img_int == raw_bin] = i + 1
+    zero_tensor = torch.tensor([0], dtype=img_int.dtype, device=device)
+    _, inverse_indices = torch.unique(torch.cat((zero_tensor, img_int.view(-1))), return_inverse=True)
+    mapped_int = inverse_indices[1:].view(img_int.shape)
         
     img_np = mapped_int.cpu().numpy()
     
