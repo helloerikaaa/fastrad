@@ -15,11 +15,19 @@ def _label_connected_components(mask_np: np.ndarray,
             from cupyx.scipy.ndimage import label as cupy_label
             
             # Transfer tensor to CuPy DLPack interface for zero-copy 
-            mask_cp = cp.from_dlpack(mask_np.astype("int32")) if isinstance(mask_np, torch.Tensor) else cp.asarray(mask_np.astype("int32"))
-            cp_structure = cp.asarray(structure)
-            
+            if isinstance(mask_np, torch.Tensor):
+                mask_cp = cp.from_dlpack(mask_np)
+            else:
+                mask_cp = cp.asarray(mask_np, dtype=cp.int32)
+                
+            cp_structure = cp.asarray(structure, dtype=cp.int32)
             labeled, _ = cupy_label(mask_cp, structure=cp_structure)
-            return torch.from_dlpack(labeled.toDlpack()).to(device)
+            
+            if hasattr(torch, "from_dlpack"):
+                return torch.from_dlpack(labeled).to(device)
+            else:
+                import torch.utils.dlpack
+                return torch.utils.dlpack.from_dlpack(labeled.toDlpack()).to(device)
         except Exception as e:
             print(f"DEBUG: CuPy GPU dispatch failed: {e}")
             pass  # fall through to scipy
