@@ -6,35 +6,38 @@ EPSILON = 1e-16
 
 import numpy as np
 
-def _label_connected_components(mask_np: np.ndarray, 
-                                device: torch.device) -> torch.Tensor:
-    structure = np.ones((3, 3, 3), dtype=int) if mask_np.ndim == 3 else np.ones((3, 3), dtype=int)
-    if device.type == "cuda":
+def _label_connected_components(mask_tensor: torch.Tensor) -> torch.Tensor:
+    import numpy as np
+    structure = np.ones((3, 3, 3), dtype=int) if mask_tensor.ndim == 3 else np.ones((3, 3), dtype=int)
+    
+    if mask_tensor.device.type == "cuda":
         try:
             import cupy as cp
             from cupyx.scipy.ndimage import label as cupy_label
             
             # Transfer tensor to CuPy DLPack interface for zero-copy 
-            if isinstance(mask_np, torch.Tensor):
-                mask_cp = cp.from_dlpack(mask_np)
+            if hasattr(torch, "from_dlpack"):
+                mask_cp = cp.from_dlpack(mask_tensor)
             else:
-                mask_cp = cp.asarray(mask_np, dtype=cp.int32)
+                import torch.utils.dlpack as torch_dlpack
+                mask_cp = cp.from_dlpack(torch_dlpack.to_dlpack(mask_tensor))
                 
             cp_structure = cp.asarray(structure, dtype=cp.int32)
             labeled, _ = cupy_label(mask_cp, structure=cp_structure)
             
             if hasattr(torch, "from_dlpack"):
-                return torch.from_dlpack(labeled).to(device)
+                return torch.from_dlpack(labeled).to(mask_tensor.device)
             else:
                 import torch.utils.dlpack as torch_dlpack
-                return torch_dlpack.from_dlpack(labeled.toDlpack()).to(device)
+                return torch_dlpack.from_dlpack(labeled.toDlpack()).to(mask_tensor.device)
         except Exception as e:
             print(f"DEBUG: CuPy GPU dispatch failed: {e}")
             pass  # fall through to scipy
             
-    from scipy.ndimage import label as scipy_label
-    labeled, _ = scipy_label(mask_np, structure=structure)
-    return torch.from_numpy(labeled.astype("int32")).to(device)
+    import scipy.ndimage
+    mask_np = mask_tensor.cpu().numpy()
+    labeled, _ = scipy.ndimage.label(mask_np, structure=structure)
+    return torch.from_numpy(labeled.astype(np.int32)).to(mask_tensor.device)
 
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
@@ -72,10 +75,10 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
             continue
             
         g = g_idx + 1 # unique contiguous bins are 1-indexed
-        crop_img = img_np[g_slices]
-        binary_mask = (crop_img == g)
+        crop_img = mapped_int[g_slices]
+        mask_tensor = (crop_img == g).to(torch.int32)
         
-        labeled_mask = _label_connected_components(binary_mask, device)
+        labeled_mask = _label_connected_components(mask_tensor)
         max_label = int(labeled_mask.max().item())
             
         if max_label > 0:
