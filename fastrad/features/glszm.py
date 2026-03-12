@@ -26,8 +26,8 @@ def _label_connected_components(mask_np: np.ndarray,
             if hasattr(torch, "from_dlpack"):
                 return torch.from_dlpack(labeled).to(device)
             else:
-                import torch.utils.dlpack
-                return torch.utils.dlpack.from_dlpack(labeled.toDlpack()).to(device)
+                import torch.utils.dlpack as torch_dlpack
+                return torch_dlpack.from_dlpack(labeled.toDlpack()).to(device)
         except Exception as e:
             print(f"DEBUG: CuPy GPU dispatch failed: {e}")
             pass  # fall through to scipy
