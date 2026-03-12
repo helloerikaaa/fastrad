@@ -51,6 +51,41 @@ def run():
     md.append("### 5.1 ICC Analysis on Real RIDER Scan-Rescan Pairs\n")
     
     import warnings
+    import re
+    
+    def pyrad_to_fastrad(pyrad_key):
+        if not pyrad_key.startswith("original_"):
+            return None
+        parts = pyrad_key.split('_')
+        if len(parts) < 3: return None
+        f_class = parts[1]
+        f_name = "_".join(parts[2:])
+        
+        mapping = {
+            '10Percentile': '10th_percentile',
+            '90Percentile': '90th_percentile',
+            'InterquartileRange': 'interquartile_range',
+            'MeanAbsoluteDeviation': 'mean_absolute_deviation',
+            'RobustMeanAbsoluteDeviation': 'robust_mean_absolute_deviation',
+            'RootMeanSquared': 'root_mean_squared',
+            'TotalEnergy': 'total_energy',
+            'Imc1': 'imc1',
+            'Imc2': 'imc2',
+            'Idm': 'idm',
+            'Idmn': 'idmn',
+            'Id': 'id',
+            'Idn': 'idn',
+            'MCC': 'mcc'
+        }
+        
+        if f_name in mapping:
+            f_name_snake = mapping[f_name]
+        else:
+            s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', f_name)
+            f_name_snake = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+            
+        return f'{f_class}:{f_name_snake}'
+
     
     def create_spherical_mask_t(img_tensor, radius_mm, spacing):
         D, H, W = img_tensor.shape
@@ -101,21 +136,31 @@ def run():
         
         # Pre-initialize data structs by running on first scan
         test_img = load_dicom_series(rider_pairs[0][0])
-        test_mask = create_spherical_mask_t(torch.zeros(test_img.GetSize()[::-1]), 15.0, test_img.GetSpacing()[::-1])
-        s_test_mask = sitk.GetImageFromArray(test_mask.numpy().astype(np.uint8))
-        s_test_mask.CopyInformation(test_img)
+        test_img_t = torch.from_numpy(sitk.GetArrayFromImage(test_img)).float()
+        test_spacing = test_img.GetSpacing()[::-1]
+        test_mask = create_spherical_mask_t(torch.zeros_like(test_img_t), 15.0, test_spacing)
         
-        base_f_res = fastrad_ext.extract(MedicalImage(torch.from_numpy(sitk.GetArrayFromImage(test_img)).float(), spacing=test_img.GetSpacing()[::-1]), Mask(test_mask, spacing=test_img.GetSpacing()[::-1]))
+        s_test_img = sitk.GetImageFromArray(test_img_t.numpy())
+        s_test_img.SetSpacing(test_spacing[::-1])
+        s_test_img.SetOrigin(test_img.GetOrigin())
+        s_test_img.SetDirection(test_img.GetDirection())
+        
+        s_test_mask = sitk.GetImageFromArray(test_mask.numpy().astype(np.uint8))
+        s_test_mask.SetSpacing(test_spacing[::-1])
+        s_test_mask.SetOrigin(test_img.GetOrigin())
+        s_test_mask.SetDirection(test_img.GetDirection())
+        
+        base_f_res = fastrad_ext.extract(MedicalImage(test_img_t, spacing=test_spacing), Mask(test_mask, spacing=test_spacing))
         fastrad_icc_data = {k: np.zeros((n_patients, 2)) for k in base_f_res.keys()}
         pyrad_icc_data = {}
+        pyrad_ext.disableAllFeatures()
         for cls in classes:
-            pyrad_ext.disableAllFeatures()
             pyrad_ext.enableFeatureClassByName(cls)
-            res = pyrad_ext.execute(test_img, s_test_mask)
-            for k in res:
-                if k.startswith("original_"):
-                    key = f"{k.split('_')[1]}_{k.split('_')[2]}".lower()
-                    if key in fastrad_icc_data: pyrad_icc_data[key] = np.zeros((n_patients, 2))
+        res = pyrad_ext.execute(s_test_img, s_test_mask)
+        for k in res:
+            if k.startswith("original_"):
+                key = pyrad_to_fastrad(k)
+                if key and key in fastrad_icc_data: pyrad_icc_data[key] = np.zeros((n_patients, 2))
         
         for p_idx, (s1, s2) in enumerate(rider_pairs):
             sitk_img1 = load_dicom_series(s1)
@@ -129,16 +174,39 @@ def run():
             except Exception:
                 continue
                 
+            # Second requirement: generate mask on scan1 ONLY, apply identical mask rigidly to scan2
+            # Notice: scan 1 and scan 2 might have different spatial bounding boxes/slice counts in RIDER.
+            # We must use proper SimpleITK physical resampling to map the mask into scan 2's frame of reference.
             mask1_t = create_spherical_mask_t(img1_t, 15.0, spacing1)
-            mask2_t = create_spherical_mask_t(img2_t, 15.0, spacing2)
+            
+            s_img1 = sitk.GetImageFromArray(img1_t.numpy())
+            s_img1.SetSpacing(spacing1[::-1])
+            s_img1.SetOrigin(sitk_img1.GetOrigin())
+            s_img1.SetDirection(sitk_img1.GetDirection())
+            
+            s_mask1 = sitk.GetImageFromArray(mask1_t.numpy().astype(np.uint8))
+            s_mask1.SetSpacing(spacing1[::-1])
+            s_mask1.SetOrigin(sitk_img1.GetOrigin())
+            s_mask1.SetDirection(sitk_img1.GetDirection())
+            
+            s_img2 = sitk.GetImageFromArray(img2_t.numpy())
+            s_img2.SetSpacing(spacing2[::-1])
+            s_img2.SetOrigin(sitk_img2.GetOrigin())
+            s_img2.SetDirection(sitk_img2.GetDirection())
+            
+            # Resample mask1 into the domain of img2 physically
+            resampler = sitk.ResampleImageFilter()
+            resampler.SetReferenceImage(s_img2)
+            resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+            resampler.SetDefaultPixelValue(0)
+            resampler.SetTransform(sitk.Transform()) # Identity transform maps physical space directly
+            s_mask2 = resampler.Execute(s_mask1)
+            
+            # Convert resampled mask back to tensor for fastrad
+            mask2_t = torch.from_numpy(sitk.GetArrayFromImage(s_mask2)).float()
             
             f_img1, f_mask1 = MedicalImage(img1_t, spacing=spacing1), Mask(mask1_t, spacing=spacing1)
             f_img2, f_mask2 = MedicalImage(img2_t, spacing=spacing2), Mask(mask2_t, spacing=spacing2)
-            
-            s_mask1 = sitk.GetImageFromArray(mask1_t.numpy().astype(np.uint8))
-            s_mask1.CopyInformation(sitk_img1)
-            s_mask2 = sitk.GetImageFromArray(mask2_t.numpy().astype(np.uint8))
-            s_mask2.CopyInformation(sitk_img2)
             
             # Extract Fastrad
             with warnings.catch_warnings():
@@ -150,33 +218,39 @@ def run():
                 fastrad_icc_data[k][p_idx, 1] = f_res2.get(k, 0)
                 
             # Extract PyRadiomics
-            for cls in classes:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    pyrad_ext.disableAllFeatures()
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                pyrad_ext.disableAllFeatures()
+                for cls in classes:
                     pyrad_ext.enableFeatureClassByName(cls)
-                    try:
-                        r1 = pyrad_ext.execute(sitk_img1, s_mask1)
-                        r2 = pyrad_ext.execute(sitk_img2, s_mask2)
-                        for k in r1:
-                            if k.startswith("original_"):
-                                key = f"{k.split('_')[1]}_{k.split('_')[2]}".lower()
-                                if key in pyrad_icc_data:
-                                    pyrad_icc_data[key][p_idx, 0] = float(r1[k]) if hasattr(r1[k], "item") == False else float(r1[k].item())
-                                    pyrad_icc_data[key][p_idx, 1] = float(r2[k]) if hasattr(r2[k], "item") == False else float(r2[k].item())
-                    except Exception:
-                        pass
+                try:
+                    r1 = pyrad_ext.execute(s_img1, s_mask1)
+                    r2 = pyrad_ext.execute(s_img2, s_mask2)
+                    for k in r1:
+                        if k.startswith("original_"):
+                            key = pyrad_to_fastrad(k)
+                            if key and key in pyrad_icc_data:
+                                pyrad_icc_data[key][p_idx, 0] = float(r1[k]) if hasattr(r1[k], "item") == False else float(r1[k].item())
+                                pyrad_icc_data[key][p_idx, 1] = float(r2[k]) if hasattr(r2[k], "item") == False else float(r2[k].item())
+                except Exception as e:
+                    print(f"PyRadiomics extraction failed: {e}")
         
         f_iccs = [compute_icc_2_1(data) for data in fastrad_icc_data.values()]
-        p_iccs = [compute_icc_2_1(data) for data in pyrad_icc_data.values()]
+        p_iccs = []
+        for feature_name, data in pyrad_icc_data.items():
+            icc_val = compute_icc_2_1(data)
+            p_iccs.append(icc_val)
+            if np.isnan(icc_val):
+                print(f"NaN ICC for PyRadiomics feature: {feature_name}")
+                print(f"Data slice: {data[:5]}")
         
-        f_high = (sum(1 for x in f_iccs if x >= 0.90) / len(f_iccs) * 100) if len(f_iccs) > 0 else 0
-        p_high = (sum(1 for x in p_iccs if x >= 0.90) / len(p_iccs) * 100) if len(p_iccs) > 0 else 0
+        f_high = (sum(1 for x in f_iccs if not np.isnan(x) and x >= 0.90) / len(f_iccs) * 100) if len(f_iccs) > 0 else 0
+        p_high = (sum(1 for x in p_iccs if not np.isnan(x) and x >= 0.90) / len(p_iccs) * 100) if len(p_iccs) > 0 else 0
         
         md.append(f"- **Fastrad Features with ICC ≥ 0.90**: {f_high:.1f}%")
         md.append(f"- **PyRadiomics Features with ICC ≥ 0.90**: {p_high:.1f}%")
-        md.append(f"- **Fastrad Mean ICC**: {np.mean(f_iccs):.4f}")
-        md.append(f"- **PyRadiomics Mean ICC**: {np.mean(p_iccs):.4f}\n")
+        md.append(f"- **Fastrad Mean ICC**: {np.nanmean(f_iccs):.4f}")
+        md.append(f"- **PyRadiomics Mean ICC**: {np.nanmean(p_iccs):.4f}\n")
 
     # 5.2 Perturbation Stability Analysis
     print("  -> Profiling Perturbation Stability Matrices (5.2)...")
@@ -206,9 +280,9 @@ def run():
             res = pyrad_ext.execute(sitk_image, sitk_mask)
             for k, v in res.items():
                 if k.startswith("original_"):
-                    parts = k.split("_")
-                    key = f"{parts[1]}_{parts[2]}".lower()
-                    pyrad_base[key] = float(v) if not hasattr(v, "item") else float(v.item())
+                    key = pyrad_to_fastrad(k)
+                    if key:
+                        pyrad_base[key] = float(v) if not hasattr(v, "item") else float(v.item())
 
         perturbations = apply_perturbations(img_t)
         
@@ -220,13 +294,15 @@ def run():
             s_img_p.CopyInformation(sitk_image)
             
             p_res_p = {}
+            pyrad_ext.disableAllFeatures()
             for cls in classes:
-                pyrad_ext.disableAllFeatures()
                 pyrad_ext.enableFeatureClassByName(cls)
-                res = pyrad_ext.execute(s_img_p, sitk_mask)
-                for k, v in res.items():
-                    if k.startswith("original_"):
-                        p_res_p[f"{k.split('_')[1]}_{k.split('_')[2]}".lower()] = float(v)
+            res = pyrad_ext.execute(s_img_p, sitk_mask)
+            for k, v in res.items():
+                if k.startswith("original_"):
+                    key = pyrad_to_fastrad(k)
+                    if key:
+                        p_res_p[key] = float(v)
                         
             f_drifts = []
             p_drifts = []
