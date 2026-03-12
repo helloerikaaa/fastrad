@@ -42,6 +42,21 @@ def _label_connected_components(mask_tensor: torch.Tensor) -> torch.Tensor:
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
+    # 1. First, strictly narrow the evaluation to the bounding box of the ROI mask 
+    # to avoid scanning millions of empty structural voxels in subsequent tensor steps.
+    coords = torch.nonzero(mask_tensor > 0.5, as_tuple=False)
+    if coords.numel() == 0:
+        return {}
+    mins = coords.min(dim=0).values
+    maxs = coords.max(dim=0).values
+    
+    if mask_tensor.ndim == 3:
+        image_tensor = image_tensor[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1, mins[2]:maxs[2]+1]
+        mask_tensor = mask_tensor[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1, mins[2]:maxs[2]+1]
+    else:
+        image_tensor = image_tensor[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1]
+        mask_tensor = mask_tensor[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1]
+        
     binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
     Ng = ivector.numel()
     if Ng == 0:
@@ -78,6 +93,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         crop_img = mapped_int[g_slices]
         mask_tensor = (crop_img == g).to(torch.int32)
         
+        # Remove debug loop and restore plain tensor dispatch    
         labeled_mask = _label_connected_components(mask_tensor)
         max_label = int(labeled_mask.max().item())
             
