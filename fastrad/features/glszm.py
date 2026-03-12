@@ -11,13 +11,17 @@ def _label_connected_components(mask_np: np.ndarray,
     structure = np.ones((3, 3, 3), dtype=int) if mask_np.ndim == 3 else np.ones((3, 3), dtype=int)
     if device.type == "cuda":
         try:
-            from cucim.core.operations.morphology import label as cucim_label
             import cupy as cp
-            mask_cp = cp.asarray(mask_np.astype("int32"))
-            labeled = cucim_label(mask_cp, structure=structure)
+            from cupyx.scipy.ndimage import label as cupy_label
+            
+            # Transfer tensor to CuPy DLPack interface for zero-copy 
+            mask_cp = cp.from_dlpack(mask_np.astype("int32")) if isinstance(mask_np, torch.Tensor) else cp.asarray(mask_np.astype("int32"))
+            cp_structure = cp.asarray(structure)
+            
+            labeled, _ = cupy_label(mask_cp, structure=cp_structure)
             return torch.from_dlpack(labeled.toDlpack()).to(device)
         except Exception as e:
-            print(f"DEBUG: cuCIM dispatch failed: {e}")
+            print(f"DEBUG: CuPy GPU dispatch failed: {e}")
             pass  # fall through to scipy
             
     from scipy.ndimage import label as scipy_label
