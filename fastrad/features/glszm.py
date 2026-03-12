@@ -39,7 +39,11 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     import scipy.ndimage
     import numpy as np
     
-    img_np = img_int.cpu().numpy()
+    mapped_int = torch.zeros_like(img_int)
+    for i, raw_bin in enumerate(ivector.to(torch.int64)):
+        mapped_int[img_int == raw_bin] = i + 1
+        
+    img_np = mapped_int.cpu().numpy()
     
     current_max_label = 0
     labels_tensor = torch.zeros(img_int.shape, dtype=torch.int64, device=device)
