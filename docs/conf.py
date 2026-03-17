@@ -18,7 +18,19 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinx_copybutton',
     'myst_parser',
+    'numpydoc'
 ]
+
+autodoc_mock_imports = [
+    'torch',
+    'pydicom',
+    'numpy',
+    'scipy',
+    'cucim',
+    'SimpleITK',
+    'skimage',
+]
+
 
 # Autodoc configuration
 autodoc_default_options = {
