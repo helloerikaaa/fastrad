@@ -15,9 +15,14 @@ User Guide
    introduction
    installation
    quickstart
+   user_guide
+   learn
    features
    benchmarks
    api
+   faq
+   developers
+   contributing
 
 Indices and tables
 ==================

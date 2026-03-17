@@ -9,8 +9,6 @@ API Reference
 
 MedicalImage
 ------------
-MedicalImage
-------------
 .. autoclass:: fastrad.image.MedicalImage
    :members:
    :undoc-members:

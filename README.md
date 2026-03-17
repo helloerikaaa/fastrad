@@ -75,6 +75,16 @@ extractor = FeatureExtractor(settings_gpu)
 features = extractor.execute(image, mask)
 ```
 
+## Documentation & Examples
+`fastrad` ships with an extensive set of clinical tutorials housed in the `examples/` directory of this repository. They demonstrate advanced applications using actual hospital dataset configurations:
+
+- `01_basic_extraction.py`: Fundamental integration setup and extraction limits.
+- `02_gpu_acceleration.py`: Native setup for deploying parallel operations upon NVidia devices.
+- `03_batch_processing_tcia.py`: Writing loops evaluating clinical cohorts simultaneously.
+- `04_advanced_configuration.py`: Managing geometric warping warnings, spacing overrides, and PyTorch dynamic memory error mitigations safely.
+
+To read the robust framework User Guide, see the `docs/user_guide.rst` and `docs/learn.rst` modules.
+
 ## Benchmarks & Scientific Stability
 The repository contains a fully automated benchmarking suite (`benchmarks/report_generator.py`) that evaluates computation time, memory efficiency, and numeric stability against PyRadiomics to produce the `fastrad_scientific_report.md`.
 
