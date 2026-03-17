@@ -251,6 +251,26 @@ def run():
         md.append(f"- **PyRadiomics Features with ICC ≥ 0.90**: {p_high:.1f}%")
         md.append(f"- **Fastrad Mean ICC**: {np.nanmean(f_iccs):.4f}")
         md.append(f"- **PyRadiomics Mean ICC**: {np.nanmean(p_iccs):.4f}\n")
+        
+        from scipy.stats import wilcoxon
+        valid_f_iccs = []
+        valid_p_iccs = []
+        f_keys = list(fastrad_icc_data.keys())
+        p_keys = list(pyrad_icc_data.keys())
+        for key in p_keys:
+            if key in f_keys:
+                f_idx = f_keys.index(key)
+                p_idx = p_keys.index(key)
+                f_val = f_iccs[f_idx]
+                p_val = p_iccs[p_idx]
+                if not np.isnan(f_val) and not np.isnan(p_val):
+                    valid_f_iccs.append(f_val)
+                    valid_p_iccs.append(p_val)
+        
+        if valid_f_iccs and valid_p_iccs:
+            stat, p = wilcoxon(valid_f_iccs, valid_p_iccs)
+            md.append(f"- **Wilcoxon signed-rank test**: stat={stat:.4f}, p={p:.4f}\n")
+
 
     # 5.2 Perturbation Stability Analysis
     print("  -> Profiling Perturbation Stability Matrices (5.2)...")

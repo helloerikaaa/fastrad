@@ -1,0 +1,13 @@
+{
+  "title": "fastrad: A GPU-accelerated Python library for calculating radiomics features",
+  "description": "fastrad is a high-performance Python library for calculating PyRadiomics-compliant imaging features, leveraging PyTorch for CPU multi-threading and GPU acceleration.",
+  "creators": [
+    {
+      "name": "fastrad Authors",
+      "affiliation": ""
+    }
+  ],
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "upload_type": "software"
+}
