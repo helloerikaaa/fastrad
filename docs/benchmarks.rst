@@ -114,10 +114,6 @@ Even without a dedicated GPU, `fastrad` natively optimizes matrix shifts and cro
    :widths: 33 33 33
    :header-rows: 1
 
-.. list-table:: CPU Runtime Acceleration (TCIA Clinical Mask)
-   :widths: 33 33 33
-   :header-rows: 1
-
    * - Hardware Architecture
      - PyRadiomics (1t)
      - fastrad (1t)
