@@ -60,3 +60,7 @@ html_theme_options = {
     'includehidden': True,
     'titles_only': False
 }
+
+# Numpydoc Configuration to prevent TOC/Index hijacking
+numpydoc_class_members_toctree = False
+numpydoc_show_class_members = False
