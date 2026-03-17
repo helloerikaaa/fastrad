@@ -81,10 +81,10 @@ The repository contains a fully automated benchmarking suite (`benchmarks/report
 Highlights from the latest scientific validation (`fastrad_scientific_report.md`):
 - **IBSI Compliance**: 100% compliant with the Phase 1 digital phantom (all absolute relative deviations ≤ 1e-13%).
 - **Numerical Parity**: 100% of internal features match PyRadiomics within a `1e-4` tolerance on real TCIA clinical segmentation masks.
-- **Runtime CPU Performance**: Up to **25.3x** single-threaded CPU speedup per feature class, and **4.31x** overall speedup compared to an 8-thread PyRadiomics execution.
-- **GPU Acceleration**: Up to **25.7x** overall pipeline speedup natively utilizing CUDA PyTorch tensor streams.
+- **Runtime CPU Performance**: Up to **25.3x** single-threaded CPU speedup per feature class, and **4.31x** overall speedup compared to a multi-thread PyRadiomics execution.
+- **GPU Acceleration**: Up to **25.0x** overall pipeline speedup (and **49x** for firstorder features) natively utilizing CUDA PyTorch tensor streams.
 - **Memory Efficiency**: Utilizes full dense tensors rather than scalar loops, resulting in a higher peak RAM footprint on large clinical ROIs (requires ~7.6 GB for a 30mm radius mask) in exchange for parallel speed.
-- **Stability**: Tested rigorously under perturbations and scan-rescan test-retest datasets, confirming statistically equivalent ICC variances with PyRadiomics (paired Wilcoxon p=0.69).
+- **Stability**: Tested rigorously under perturbations and scan-rescan test-retest datasets, confirming statistically equivalent ICC variances with PyRadiomics (paired Wilcoxon p>0.40).
 - **Robustness**: Provides graceful, PyRadiomics-parity handling of edge cases (Empty Masks, Single-Voxel masks).
 
 Run the full scientific benchmark suite locally to regenerate the physical report:

@@ -10,9 +10,9 @@ GPU Performance
 
 Below is a direct measurement comparing a standard `PyRadiomics` extraction against `fastrad` utilizing an NVIDIA GPU (Intel i9 14th Gen, RTX 4070 Ti, 96GB RAM). 
 
-*(Metrics taken from a 512x512 volumetric TCIA matrix using a custom 15mm-radius spherical ROI mask, comparing native single-threaded PyRadiomics feature calculation against `fastrad` PyTorch CUDA offloading)*
+*(Metrics taken from a real clinical TCIA segmentation mask, comparing native single-threaded PyRadiomics feature calculation against `fastrad` PyTorch CUDA offloading)*
 
-.. list-table:: GPU Runtime Acceleration (TCIA 512x512 matrix)
+.. list-table:: GPU Runtime Acceleration (TCIA Clinical Mask)
    :widths: 25 25 25 25
    :header-rows: 1
 
@@ -21,56 +21,56 @@ Below is a direct measurement comparing a standard `PyRadiomics` extraction agai
      - fastrad (CUDA)
      - Speedup
    * - Firstorder
-     - 2.29s
-     - 0.034s
-     - **68x**
+     - 0.4079s
+     - 0.0083s
+     - **49.3x**
    * - Shape
-     - 2.33s
-     - 0.063s
-     - **37x**
+     - 0.4114s
+     - 0.0117s
+     - **35.0x**
    * - GLCM
-     - 2.29s
-     - 0.072s
-     - **32x**
+     - 0.4175s
+     - 0.0210s
+     - **19.9x**
    * - GLRLM
-     - 2.29s
-     - 0.078s
-     - **29x**
+     - 0.4135s
+     - 0.0320s
+     - **12.9x**
    * - GLSZM
-     - 2.30s
-     - 0.271s
-     - **8.5x**
+     - 0.4129s
+     - 0.0183s
+     - **22.5x**
    * - GLDM
-     - 2.29s
-     - 0.051s
-     - **45x**
+     - 0.4209s
+     - 0.0113s
+     - **37.1x**
    * - NGTDM
-     - 2.29s
-     - 0.058s
-     - **40x**
+     - 0.4119s
+     - 0.0130s
+     - **31.6x**
    * - **TOTAL**
-     - **16.09s**
-     - **0.63s**
-     - **~25.7x**
+     - **2.8961s**
+     - **0.1157s**
+     - **~25.0x**
 
 CPU Performance
 ---------------
 
 Even without a dedicated GPU, `fastrad` natively optimizes matrix shifts and crops via tensor algorithms to cleanly exceed typical single-threaded PyRadiomics evaluation instances.
 
-.. list-table:: CPU Runtime Acceleration (TCIA 512x512 matrix)
+.. list-table:: CPU Runtime Acceleration (TCIA Clinical Mask)
    :widths: 33 33 33
    :header-rows: 1
 
    * - Hardware Architecture
      - PyRadiomics (1t)
      - fastrad (1t)
-   * - Apple M3 Max (ARM)
-     - 17.0s
-     - 4.8s (**3.5x**)
+   * - Apple M3 (ARM)
+     - 2.99s
+     - 0.78s (**3.8x**)
    * - Intel Core i9 14th Gen (x86)
-     - 16.1s
-     - 8.4s (**1.9x**)
+     - 2.89s
+     - 1.10s (**2.6x**)
 
 Optimizing GLSZM (cuCIM)
 ------------------------
