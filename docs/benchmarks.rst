@@ -84,6 +84,6 @@ Stability Guarantee
 
 Memory Footprint Optimization
 -----------------------------
-Because of its dense tensor streaming architecture rather than scalar iterations, `fastrad` fundamentally eliminates massive sequence allocation limits native to PyRadiomics routines mapping on large ROIs. At an ROI diameter of 30mm (67k voxels), `fastrad` operates using 90% less peak RAM footprint dynamically allocating sparse equivalent matrices.
+Because of its dense tensor streaming architecture prioritizing evaluation speed, `fastrad` fundamentally trades peak CPU memory footprint for significant reductions in execution time. By materializing full dense tensors throughout computation instead of sequential voxel loops, at an ROI diameter of 30mm (67k voxels), `fastrad` requires substantially more peak CPU RAM (~7.6GB) compared to PyRadiomics (<1GB). It is highly recommended to use the GPU pathway or smaller batch chunks on systems with limited physical resources or when processing massive whole-organ segmentation volumes.
 
 For full rigorous automated metrics across our 6-pillar validation setup, refer to the dynamically generated `fastrad_scientific_report.md` at the root of the repository.

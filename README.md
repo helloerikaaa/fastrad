@@ -5,7 +5,7 @@ FastRadiomics (fastrad) is a GPU-accelerated Python library for calculating radi
 - **Full Parity with PyRadiomics:** Extracts the exact same features as the original PyRadiomics implementations.
 - **Hardware Acceleration:** Native PyTorch backend seamlessly targets multi-core CPUs, CUDA-enabled GPUs, and Apple Silicon (MPS)* out of the box.
 - **IBSI Compliant:** Passed standard Image Biomarker Standardisation Initiative (IBSI) digital phantom validation testing.
-- **Resource Efficient:** Operates with 3.0x less peak RAM utilizing PyTorch tensor streaming versus Python sequence allocations.
+- **Memory vs Speed Trade-off:** By materializing full tensors throughout computation, `fastrad` fundamentally trades CPU memory footprint for significant reductions in execution time.
 - **Supported Feature Classes:**
   - First Order
   - Shape (2D and 3D)
@@ -81,10 +81,10 @@ The repository contains a fully automated benchmarking suite (`benchmarks/report
 Highlights from the latest scientific validation (`fastrad_scientific_report.md`):
 - **IBSI Compliance**: 100% compliant with the Phase 1 digital phantom (all absolute relative deviations ≤ 1e-13%).
 - **Numerical Parity**: 100% of internal features match PyRadiomics within a `1e-4` tolerance on real TCIA clinical segmentation masks.
-- **Runtime CPU Performance**: Up to **24.68x** single-threaded CPU speedup per feature class, and **3.21x** overall speedup compared to an 8-thread PyRadiomics execution.
+- **Runtime CPU Performance**: Up to **25.3x** single-threaded CPU speedup per feature class, and **4.31x** overall speedup compared to an 8-thread PyRadiomics execution.
 - **GPU Acceleration**: Up to **25.7x** overall pipeline speedup natively utilizing CUDA PyTorch tensor streams.
-- **Memory Efficiency**: Utilizes 50-90% less peak CPU RAM (up to 0.10x PyRadiomics footprint) on large clinical ROIs.
-- **Stability**: Tested rigorously for Sub-voxel translation and Gaussian noise perturbations alongside real RIDER DICOM scan-rescan pair ICC evaluations (10.7% features with ICC ≥ 0.90).
+- **Memory Efficiency**: Utilizes full dense tensors rather than scalar loops, resulting in a higher peak RAM footprint on large clinical ROIs (requires ~7.6 GB for a 30mm radius mask) in exchange for parallel speed.
+- **Stability**: Tested rigorously under perturbations and scan-rescan test-retest datasets, confirming statistically equivalent ICC variances with PyRadiomics (paired Wilcoxon p=0.69).
 - **Robustness**: Provides graceful, PyRadiomics-parity handling of edge cases (Empty Masks, Single-Voxel masks).
 
 Run the full scientific benchmark suite locally to regenerate the physical report:
