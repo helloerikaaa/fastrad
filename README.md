@@ -1,4 +1,12 @@
 # fastrad
+
+[![PyPI Version](https://img.shields.io/pypi/v/fastrad.svg)](https://pypi.org/project/fastrad/)
+[![GitHub Release](https://img.shields.io/github/v/release/helloerikaaa/fastrad.svg)](https://github.com/helloerikaaa/fastrad/releases)
+[![Tests Status](https://github.com/helloerikaaa/fastrad/actions/workflows/python-app.yml/badge.svg)](https://github.com/helloerikaaa/fastrad/actions)
+[![Documentation Status](https://readthedocs.org/projects/fastrad/badge/?version=latest)](https://fastrad.readthedocs.io/en/latest/?badge=latest)
+[![Python Versions](https://img.shields.io/pypi/pyversions/fastrad.svg)](https://pypi.org/project/fastrad/)
+[![License](https://img.shields.io/github/license/helloerikaaa/fastrad.svg)](https://github.com/helloerikaaa/fastrad/blob/main/LICENSE)
+
 FastRadiomics (fastrad) is a GPU-accelerated Python library for calculating radiomics features from medical images. It aims to be a high-performance alternative to PyRadiomics, built from the ground up to achieve deep feature extraction parity with significantly faster execution times by utilizing PyTorch for tensor operations.
 
 ## Features
