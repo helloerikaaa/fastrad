@@ -1,7 +1,7 @@
 # fastrad
 
 [![PyPI Version](https://img.shields.io/pypi/v/fastrad.svg)](https://pypi.org/project/fastrad/)
-[![GitHub Release](https://img.shields.io/github/v/release/helloerikaaa/fastrad.svg)](https://github.com/helloerikaaa/fastrad/releases)
+[![GitHub Release](https://img.shields.io/github/release/helloerikaaa/fastrad.svg)](https://github.com/helloerikaaa/fastrad/releases)
 [![Tests Status](https://github.com/helloerikaaa/fastrad/actions/workflows/python-app.yml/badge.svg)](https://github.com/helloerikaaa/fastrad/actions)
 [![Documentation Status](https://readthedocs.org/projects/fastrad/badge/?version=latest)](https://fastrad.readthedocs.io/en/latest/?badge=latest)
 [![Python Versions](https://img.shields.io/pypi/pyversions/fastrad.svg)](https://pypi.org/project/fastrad/)
@@ -31,7 +31,7 @@ You can install `fastrad` and its core dependencies easily:
 
 ```bash
 # Clone the repository
-git clone https://github.com/organization/fastrad.git
+git clone https://github.com/helloerikaaa/fastrad.git
 cd fastrad
 
 # Install standard CPU dependencies
