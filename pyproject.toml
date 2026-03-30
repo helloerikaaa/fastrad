@@ -25,7 +25,6 @@ cuda = [
 ]
 test = [
     "pytest",
-    "pyradiomics",
     "SimpleITK",
     "nibabel"
 ]
