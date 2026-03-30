@@ -1,9 +1,27 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-  - family-names: "Authors"
-    given-names: "fastrad"
+  - family-names: "Sánchez-Femat"
+    given-names: "Erika"
+  - family-names: "Celaya-Padilla"
+    given-names: "José-María"
+  - family-names: "Galván-Tejada"
+    given-names: "Carlos-Eric"
 title: "fastrad: A GPU-accelerated Python library for calculating radiomics features"
+abstract: "fastrad is a high-performance Python library for calculating PyRadiomics-compliant imaging features, leveraging PyTorch for CPU multi-threading and GPU acceleration."
 version: 0.1.0
-date-released: "2026-03-16"
+date-released: "2026-03-30"
 url: "https://github.com/helloerikaaa/fastrad"
+preferred-citation:
+  type: article
+  status: preprint
+  title: "fastrad: A GPU-accelerated Python library for calculating radiomics features"
+  authors:
+    - family-names: "Sánchez-Femat"
+      given-names: "Erika"
+    - family-names: "Celaya-Padilla"
+      given-names: "José-María"
+    - family-names: "Galván-Tejada"
+      given-names: "Carlos-Eric"
+  doi: "10.2139/ssrn.6436486"
+  url: "https://doi.org/10.2139/ssrn.6436486"

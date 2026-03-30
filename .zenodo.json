@@ -3,11 +3,25 @@
   "description": "fastrad is a high-performance Python library for calculating PyRadiomics-compliant imaging features, leveraging PyTorch for CPU multi-threading and GPU acceleration.",
   "creators": [
     {
-      "name": "fastrad Authors",
-      "affiliation": ""
+      "name": "Sánchez-Femat, Erika",
+      "affiliation": "Universidad Autónoma de Zacatecas"
+    },
+    {
+      "name": "Celaya-Padilla, José-María",
+      "affiliation": "Universidad Autónoma de Zacatecas"
+    },
+    {
+      "name": "Galván-Tejada, Carlos-Eric",
+      "affiliation": "Universidad Autónoma de Zacatecas"
     }
   ],
   "access_right": "open",
   "license": "Apache-2.0",
-  "upload_type": "software"
+  "upload_type": "software",
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "10.2139/ssrn.6436486"
+    }
+  ]
 }
