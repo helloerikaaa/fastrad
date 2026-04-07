@@ -9,8 +9,8 @@ authors:
     given-names: "Carlos-Eric"
 title: "fastrad: A GPU-accelerated Python library for calculating radiomics features"
 abstract: "fastrad is a high-performance Python library for calculating PyRadiomics-compliant imaging features, leveraging PyTorch for CPU multi-threading and GPU acceleration."
-version: 1.0.0
-date-released: "2026-03-30"
+version: 1.1.0
+date-released: "2026-04-07"
 url: "https://github.com/helloerikaaa/fastrad"
 preferred-citation:
   type: article
