@@ -90,3 +90,20 @@ The above example processed a single volume safely. However, standard clinical r
 
 * To learn about iterating over batch arrays and resolving hardware Out-Of-Memory limitations, read our exhaustive :ref:`user-guide`.
 * To investigate the core 100+ IBSI vector rules mathematically extracted internally, see the formal Mathematical Documentation.
+
+Advanced: Hardware-Accelerated Voxel-wise Feature Extraction
+-----------------------------------------------------------
+If your pipeline requires dense feature maps fed directly into downstream neural networks (like CNNs or Transformers), you can utilize our hardware-accelerated memory-strided patch view extractor without altering your mathematical blueprints:
+
+.. code-block:: python
+
+   from fastrad import DenseFeatureExtractor
+
+   dense_extractor = DenseFeatureExtractor(settings)
+   
+   # Extracts dense sliding window feature maps 
+   # Using a kernel size of 3x3x3 voxels and stride of 1.
+   dense_features = dense_extractor.extract_dense(image, mask, kernel_size=3, stride=1)
+   
+   # Output maps are full natively tracked PyTorch Tensors on your hardware configuration
+   print(f"Dense Feature Map Shape (Energy): {dense_features['firstorder:energy'].shape}")

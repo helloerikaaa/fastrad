@@ -34,3 +34,10 @@ FeatureExtractor
    :members:
    :undoc-members:
    :no-index:
+
+DenseFeatureExtractor
+---------------------
+.. autoclass:: fastrad.dense_extractor.DenseFeatureExtractor
+   :members:
+   :undoc-members:
+   :no-index:

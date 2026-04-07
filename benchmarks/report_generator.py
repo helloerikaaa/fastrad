@@ -9,7 +9,8 @@ from benchmarks import (
     run_runtime_performance,
     run_memory_efficiency,
     run_reproducibility_stability,
-    run_robustness
+    run_robustness,
+    run_dense_performance
 )
 
 def build_report():
@@ -32,7 +33,8 @@ def build_report():
         run_runtime_performance.run,
         run_memory_efficiency.run,
         run_reproducibility_stability.run,
-        run_robustness.run
+        run_robustness.run,
+        run_dense_performance.run
     ]
     
     with open(report_path, "w", encoding="utf-8") as f:
