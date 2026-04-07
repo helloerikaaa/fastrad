@@ -275,4 +275,39 @@ Edge Case Handling
      - Graceful + Warning
      - Graceful Completion
 
-For full rigorous automated metrics across our 6-pillar validation setup, refer to the generated scientific report utilizing the ``run_benchmark.py`` scripts.
+Dense Voxel-Wise Hardware Extraction Performance
+------------------------------------------------
+This section evaluates the runtime extraction performance scaling of `fastrad` when evaluating sliding windows densely across a large clinical tissue volume block, producing explicit multi-channel natively tracked spatial PyTorch Tensor maps instead of single scalar representations.
+
+**Hardware Evaluation Config**: CPU
+
+Volume Profile: 64x64x64 Matrix (262,144 physical spatial locations)
+
+.. list-table:: Voxel-Wise Feature Map Generation Runtime
+   :widths: 20 20 20 20 20
+   :header-rows: 1
+
+   * - Kernel Size (Voxel)
+     - Stride
+     - Result Shape Map
+     - Window Evaluations Executed
+     - Execution Time (s)
+   * - 32^3
+     - 16
+     - [3x3x3]
+     - 27
+     - 0.78s
+   * - 24^3
+     - 8
+     - [6x6x6]
+     - 216
+     - 3.16s
+   * - 16^3
+     - 4
+     - [13x13x13]
+     - 2197
+     - 15.71s
+
+*Note: Output feature maps are evaluated strictly to valid mathematical patches exclusively. `DenseFeatureExtractor` prevents padding out of bound math pollution, executing highly deterministic memory-strided patch views via `PyTorch F.unfold` framework logic.*
+
+For full rigorous automated metrics across our combined validation setup, refer to the generated scientific report utilizing the ``run_benchmark.py`` scripts.
