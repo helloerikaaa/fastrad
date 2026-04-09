@@ -21,7 +21,7 @@ jobs:
       - name: Build project
         run: hatch build
       - name: Publish to PyPI
-        env:
-          HATCH_INDEX_USER: __token__
-          HATCH_INDEX_AUTH: ${{ secrets.PYPI_API_TOKEN }}
-        run: hatch publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
