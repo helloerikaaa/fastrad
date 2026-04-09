@@ -23,7 +23,13 @@ def test_empty_mask(base_settings):
     with pytest.raises(ValueError, match="Mask contains no positive voxels"):
         extractor.extract(image, mask)
 
-def test_single_voxel_mask(base_settings, caplog):
+class LogCapture:
+    def __init__(self):
+        self.messages = []
+    def write(self, message):
+        self.messages.append(message)
+
+def test_single_voxel_mask(base_settings):
     """Test that a single voxel mask evaluates without crashing, though features may be sparse/nan."""
     image_tensor = torch.rand(10, 10, 10)
     mask_tensor = torch.zeros(10, 10, 10)
@@ -33,10 +39,15 @@ def test_single_voxel_mask(base_settings, caplog):
     mask = Mask(tensor=mask_tensor)
     extractor = FeatureExtractor(base_settings)
     
-    with caplog.at_level(logging.WARNING):
-        features = extractor.extract(image, mask)
+    from fastrad.logger import logger
+    capture = LogCapture()
+    handler_id = logger.add(capture.write)
+    
+    features = extractor.extract(image, mask)
+    
+    logger.remove(handler_id)
         
-    assert "exactly one positive voxel" in caplog.text
+    assert "exactly one positive voxel" in "".join(capture.messages)
     # We do not assert exact features here as they degrade gracefully (some may be nan or empty based on the module)
     assert isinstance(features, dict)
 
