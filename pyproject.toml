@@ -16,7 +16,9 @@ dependencies = [
     "pydicom",
     "numpy",
     "scipy",
-    "loguru"
+    "loguru",
+    "SimpleITK",
+    "nibabel"
 ]
 
 [project.optional-dependencies]
@@ -25,9 +27,7 @@ cuda = [
     "cucim-cu12>=24.0"
 ]
 test = [
-    "pytest",
-    "SimpleITK",
-    "nibabel"
+    "pytest"
 ]
 docs = [
     "sphinx>=7.0.0",
