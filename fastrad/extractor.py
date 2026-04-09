@@ -107,12 +107,22 @@ class FeatureExtractor:
             
             compute_fn = _FEATURE_MAP[feature_class]
             
+            device_type = "cuda" if self.device.type == "cuda" else ("cpu" if self.device.type == "cpu" else None)
+            
             try:
-                class_features = compute_fn(
-                    image_tensor=img_tensor,
-                    mask_tensor=mask_tensor,
-                    settings=self.settings
-                )
+                if self.settings.amp and device_type:
+                    with torch.autocast(device_type=device_type):
+                        class_features = compute_fn(
+                            image_tensor=img_tensor,
+                            mask_tensor=mask_tensor,
+                            settings=self.settings
+                        )
+                else:
+                    class_features = compute_fn(
+                        image_tensor=img_tensor,
+                        mask_tensor=mask_tensor,
+                        settings=self.settings
+                    )
             except torch.cuda.OutOfMemoryError:
                 if self.device.type == "cuda":
                     logger.warning(
@@ -127,11 +137,19 @@ class FeatureExtractor:
                     cpu_mask_tensor = mask_tensor.cpu()
                     
                     # Compute on CPU
-                    class_features = compute_fn(
-                        image_tensor=cpu_img_tensor,
-                        mask_tensor=cpu_mask_tensor,
-                        settings=self.settings
-                    )
+                    if self.settings.amp:
+                        with torch.autocast(device_type="cpu"):
+                            class_features = compute_fn(
+                                image_tensor=cpu_img_tensor,
+                                mask_tensor=cpu_mask_tensor,
+                                settings=self.settings
+                            )
+                    else:
+                        class_features = compute_fn(
+                            image_tensor=cpu_img_tensor,
+                            mask_tensor=cpu_mask_tensor,
+                            settings=self.settings
+                        )
                     
                     # Free up CPU memory
                     del cpu_img_tensor
