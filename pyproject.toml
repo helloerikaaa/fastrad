@@ -24,6 +24,9 @@ cuda = [
     "torch>=2.0",
     "cucim-cu12>=24.0"
 ]
+tinygrad = [
+    "tinygrad>=0.9.0"
+]
 test = [
     "pytest",
     "SimpleITK",
