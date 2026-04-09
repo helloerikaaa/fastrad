@@ -65,7 +65,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     if final_valid_gray.numel() == 0:
         return {}
         
-    max_val = int(torch.max(final_valid_gray).item())
+    max_val = int(torch.max(final_valid_gray))
     
     if max_val == 0:
         return {}
@@ -149,11 +149,11 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     strength = sum_str / sum_s_i if sum_s_i > 0 else torch.tensor(0.0, dtype=torch.float64, device=device)
     
     features = {
-        "ngtdm:coarseness": coarseness.item(),
-        "ngtdm:contrast": contrast.item(),
-        "ngtdm:busyness": busyness.item(),
-        "ngtdm:complexity": complexity.item(),
-        "ngtdm:strength": strength.item()
+        "ngtdm:coarseness": coarseness,
+        "ngtdm:contrast": contrast,
+        "ngtdm:busyness": busyness,
+        "ngtdm:complexity": complexity,
+        "ngtdm:strength": strength
     }
     
     return features

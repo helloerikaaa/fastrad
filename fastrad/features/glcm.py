@@ -13,7 +13,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     if Ng == 0:
         return {}
     
-    max_gl = int(torch.max(ivector).item())
+    max_gl = int(torch.max(ivector))
         
     angles = [
         (0, 0, 1),
@@ -216,7 +216,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
             evs = torch.linalg.eigvals(Q).real
             evs = torch.sort(evs, descending=True).values
             if len(evs) >= 2:
-                mcc_list.append(math.sqrt(evs[1].item()))
+                mcc_list.append(math.sqrt(evs[1]))
             else:
                 mcc_list.append(1.0)
         except:
@@ -225,29 +225,29 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     mcc = sum(mcc_list) / len(mcc_list) if mcc_list else 1.0
     
     features = {
-        "glcm:contrast": contrast.item(),
-        "glcm:difference_average": diff_avg.item(),
-        "glcm:correlation": correlation.item(),
-        "glcm:joint_average": joint_average.item(),
-        "glcm:joint_energy": joint_energy.item(),
-        "glcm:joint_entropy": joint_entropy.item(),
-        "glcm:autocorrelation": autocorrelation.item(),
-        "glcm:cluster_prominence": cluster_prominence.item(),
-        "glcm:cluster_shade": cluster_shade.item(),
-        "glcm:cluster_tendency": cluster_tendency.item(),
-        "glcm:maximum_probability": max_prob.item(),
-        "glcm:sum_squares": sum_squares.item(),
-        "glcm:id": id_.item(),
-        "glcm:idm": idm.item(),
-        "glcm:idn": idn.item(),
-        "glcm:idmn": idmn.item(),
-        "glcm:inverse_variance": inv_var.item(),
-        "glcm:sum_average": sum_average.item(),
-        "glcm:difference_variance": diff_var.item(),
-        "glcm:difference_entropy": diff_entropy.item(),
-        "glcm:sum_entropy": sum_entropy.item(),
-        "glcm:imc1": imc1.item(),
-        "glcm:imc2": imc2.item(),
+        "glcm:contrast": contrast,
+        "glcm:difference_average": diff_avg,
+        "glcm:correlation": correlation,
+        "glcm:joint_average": joint_average,
+        "glcm:joint_energy": joint_energy,
+        "glcm:joint_entropy": joint_entropy,
+        "glcm:autocorrelation": autocorrelation,
+        "glcm:cluster_prominence": cluster_prominence,
+        "glcm:cluster_shade": cluster_shade,
+        "glcm:cluster_tendency": cluster_tendency,
+        "glcm:maximum_probability": max_prob,
+        "glcm:sum_squares": sum_squares,
+        "glcm:id": id_,
+        "glcm:idm": idm,
+        "glcm:idn": idn,
+        "glcm:idmn": idmn,
+        "glcm:inverse_variance": inv_var,
+        "glcm:sum_average": sum_average,
+        "glcm:difference_variance": diff_var,
+        "glcm:difference_entropy": diff_entropy,
+        "glcm:sum_entropy": sum_entropy,
+        "glcm:imc1": imc1,
+        "glcm:imc2": imc2,
         "glcm:mcc": mcc,
     }
     

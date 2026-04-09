@@ -67,7 +67,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     M = mask_tensor > 0.5
     img_int = binned_image.to(torch.int64) * M
     
-    if int(torch.max(img_int).item()) == 0:
+    if int(torch.max(img_int)) == 0:
         return {}
         
     import scipy.ndimage
@@ -95,7 +95,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         
         # Remove debug loop and restore plain tensor dispatch    
         labeled_mask = _label_connected_components(mask_tensor)
-        max_label = int(labeled_mask.max().item())
+        max_label = int(labeled_mask.max())
             
         if max_label > 0:
             mask_pos = labeled_mask > 0
@@ -116,7 +116,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     comp_gray = torch.zeros(N_c, dtype=img_int.dtype, device=device)
     comp_gray.scatter_(0, inverse_indices, valid_gray)
     
-    Nz = int(torch.max(counts).item())
+    Nz = int(torch.max(counts))
     
     if Nz == 0:
         return {}
@@ -124,7 +124,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     g = comp_gray - 1
     s = counts - 1
     
-    max_gl = int(torch.max(ivector).item())
+    max_gl = int(torch.max(ivector))
     linear_indices = g * Nz + s
     matrix_counts = torch.bincount(linear_indices, minlength=max_gl*Nz).to(torch.float64)
     P_raw = matrix_counts[:max_gl*Nz].view(max_gl, Nz)
@@ -174,22 +174,22 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     lahgle = torch.sum(P * (i_grid ** 2) * (j_grid ** 2)) / Ns
     
     features = {
-        "glszm:small_area_emphasis": sae.item(),
-        "glszm:large_area_emphasis": lae.item(),
-        "glszm:gray_level_non_uniformity": glnu.item(),
-        "glszm:gray_level_non_uniformity_normalized": glnun.item(),
-        "glszm:size_zone_non_uniformity": szn.item(),
-        "glszm:size_zone_non_uniformity_normalized": sznn.item(),
-        "glszm:zone_percentage": zp.item(),
-        "glszm:gray_level_variance": glv.item(),
-        "glszm:zone_variance": zv.item(),
-        "glszm:zone_entropy": ze.item(),
-        "glszm:low_gray_level_zone_emphasis": lglze.item(),
-        "glszm:high_gray_level_zone_emphasis": hglze.item(),
-        "glszm:small_area_low_gray_level_emphasis": salgle.item(),
-        "glszm:small_area_high_gray_level_emphasis": sahgle.item(),
-        "glszm:large_area_low_gray_level_emphasis": lalgle.item(),
-        "glszm:large_area_high_gray_level_emphasis": lahgle.item()
+        "glszm:small_area_emphasis": sae,
+        "glszm:large_area_emphasis": lae,
+        "glszm:gray_level_non_uniformity": glnu,
+        "glszm:gray_level_non_uniformity_normalized": glnun,
+        "glszm:size_zone_non_uniformity": szn,
+        "glszm:size_zone_non_uniformity_normalized": sznn,
+        "glszm:zone_percentage": zp,
+        "glszm:gray_level_variance": glv,
+        "glszm:zone_variance": zv,
+        "glszm:zone_entropy": ze,
+        "glszm:low_gray_level_zone_emphasis": lglze,
+        "glszm:high_gray_level_zone_emphasis": hglze,
+        "glszm:small_area_low_gray_level_emphasis": salgle,
+        "glszm:small_area_high_gray_level_emphasis": sahgle,
+        "glszm:large_area_low_gray_level_emphasis": lalgle,
+        "glszm:large_area_high_gray_level_emphasis": lahgle
     }
     
     return features

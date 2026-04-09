@@ -139,6 +139,10 @@ class FeatureExtractor:
                 else:
                     raise
             
+            # Enforce PyRadiomics float backward-compatibility natively
+            if not self.settings.differentiable:
+                class_features = {k: v.item() if hasattr(v, "item") else v for k, v in class_features.items()}
+                
             features.update(class_features)
             
         return features
