@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'fastrad'
 copyright = '2026, fastrad authors'
 author = 'fastrad authors'
-release = '0.1.0'
+release = '2.1.4'
 
 extensions = [
     'sphinx.ext.autodoc',
