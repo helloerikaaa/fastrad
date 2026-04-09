@@ -107,7 +107,7 @@ class FeatureExtractor:
             
             compute_fn = _FEATURE_MAP[feature_class]
             
-            device_type = "cuda" if self.device.type == "cuda" else ("cpu" if self.device.type == "cpu" else None)
+            device_type = "cuda" if self.device == "cuda" else ("cpu" if self.device == "cpu" else None)
             
             try:
                 if self.settings.amp and device_type:
@@ -124,7 +124,7 @@ class FeatureExtractor:
                         settings=self.settings
                     )
             except torch.cuda.OutOfMemoryError:
-                if self.device.type == "cuda":
+                if self.device == "cuda":
                     logger.warning(
                         f"CUDA OutOfMemoryError caught while extracting {feature_class} features. "
                         f"Falling back to CPU computation for this feature class."
