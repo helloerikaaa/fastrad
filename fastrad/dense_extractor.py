@@ -1,11 +1,9 @@
 import torch
-import logging
 from typing import Dict, Tuple, Union
 from .settings import FeatureSettings
 from .image import MedicalImage, Mask
 from .extractor import FeatureExtractor, _FEATURE_MAP
-
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 class DenseFeatureExtractor(FeatureExtractor):
     """
@@ -92,7 +90,7 @@ class DenseFeatureExtractor(FeatureExtractor):
                                 f_vals = compute_fn(p_img, p_mask, self.settings)
                                 
                         except torch.cuda.OutOfMemoryError:
-                            if self.device.type == "cuda":
+                            if self.device == "cuda":
                                 logger.warning(
                                     f"CUDA OutOfMemoryError caught for {feature_class} in patch {zi},{yi},{xi}. "
                                     f"Falling back to CPU computation."

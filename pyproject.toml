@@ -15,7 +15,8 @@ dependencies = [
     "torch",
     "pydicom",
     "numpy",
-    "scipy"
+    "scipy",
+    "loguru"
 ]
 
 [project.optional-dependencies]

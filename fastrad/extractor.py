@@ -1,4 +1,3 @@
-import logging
 import warnings
 import torch
 from typing import Dict, Any, Callable
@@ -6,7 +5,7 @@ from .settings import FeatureSettings
 from .image import MedicalImage, Mask
 from .utils.device import resolve_device
 
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 # Filter the isotropic spacing warning so it only appears once per runtime.
 warnings.filterwarnings("once", message=".*is not isotropic.*")

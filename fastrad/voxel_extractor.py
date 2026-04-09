@@ -1,4 +1,3 @@
-import logging
 import torch
 import numpy as np
 from types import SimpleNamespace
@@ -6,8 +5,7 @@ from typing import Dict, Any, Tuple
 from fastrad.settings import FeatureSettings
 from fastrad.image import MedicalImage, Mask
 from fastrad.extractor import FeatureExtractor
-
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 class VoxelFeatureExtractor:
     """

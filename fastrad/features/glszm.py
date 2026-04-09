@@ -1,6 +1,7 @@
 import torch
 from fastrad.settings import FeatureSettings
 from fastrad.image import get_binned_image
+from fastrad.logger import logger
 
 EPSILON = 1e-16
 
@@ -31,7 +32,7 @@ def _label_connected_components(mask_tensor: torch.Tensor) -> torch.Tensor:
                 import torch.utils.dlpack as torch_dlpack
                 return torch_dlpack.from_dlpack(labeled.toDlpack()).to(mask_tensor.device)
         except Exception as e:
-            print(f"DEBUG: CuPy GPU dispatch failed: {e}")
+            logger.debug(f"CuPy GPU dispatch failed: {e}")
             pass  # fall through to scipy
             
     import scipy.ndimage
