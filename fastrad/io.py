@@ -1,3 +1,4 @@
+import os
 import torch
 import SimpleITK as sitk
 import numpy as np
@@ -95,7 +96,8 @@ def crop_to_bbox(image: sitk.Image, mask: sitk.Image, label: int = 1, pad: int =
         bbox[i+3] = end - start
         
     roi_filter = sitk.RegionOfInterestImageFilter()
-    roi_filter.SetRegionOfInterest(bbox[3:], bbox[:3])
+    roi_filter.SetSize(bbox[3:])
+    roi_filter.SetIndex(bbox[:3])
     
     img_crop = roi_filter.Execute(image)
     mask_crop = roi_filter.Execute(mask)
@@ -113,15 +115,30 @@ def _sitk_to_tensor(sitk_img: sitk.Image) -> Tuple[torch.Tensor, Tuple[float, fl
     spacing_zyx = (float(spacing[2]), float(spacing[1]), float(spacing[0]))
     return torch.from_numpy(data), spacing_zyx
 
+def _read_sitk_image(path: Union[str, Path]) -> sitk.Image:
+    """
+    Safely reads DICOM directories or single NIfTI/NRRD volume files smoothly mimicking legacy I/O bindings.
+    """
+    path_str = str(path)
+    if os.path.isdir(path_str):
+        reader = sitk.ImageSeriesReader()
+        dicom_names = reader.GetGDCMSeriesFileNames(path_str)
+        if not dicom_names:
+            raise ValueError(f"Directory {path_str} does not contain valid DICOM series.")
+        reader.SetFileNames(dicom_names)
+        return reader.Execute()
+    else:
+        return sitk.ReadImage(path_str)
+
 def load_and_align(image_path: Union[str, Path], mask_path: Union[str, Path], resample_spacing: Optional[Tuple[float, float, float]] = None, crop: bool = True) -> Tuple[MedicalImage, Mask]:
     """
     Core entrypoint matching the PyRadiomics `pyradiomics.imageoperations` logic exactly.
     """
     logger.info(f"Loading Image: {image_path}")
-    image_sitk = sitk.ReadImage(str(image_path))
+    image_sitk = _read_sitk_image(image_path)
     
     logger.info(f"Loading Mask: {mask_path}")
-    mask_sitk = sitk.ReadImage(str(mask_path))
+    mask_sitk = _read_sitk_image(mask_path)
     
     # 1. Geometry Handshake
     if not _check_geometry_match(image_sitk, mask_sitk):
