@@ -23,3 +23,4 @@ class FeatureSettings:
     compile: bool = False
     compile_mode: str = "reduce-overhead"
     amp: bool = False
+    differentiable: bool = False

@@ -56,7 +56,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     if dim_sizes[force_dim] > 1:
         raise ValueError(f"Size of the mask in dimension {force_dim} is more than 1, cannot compute 2D shape")
         
-    slice_idx = min_dims[force_dim].item()
+    slice_idx = min_dims[force_dim]
     
     if force_dim == 0:
         M2D = mask[slice_idx, :, :]
@@ -110,10 +110,10 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         a = (v1 + off) * spacing_2d
         b = (v2 + off) * spacing_2d
         
-        total_surface += torch.sum(a[:, 0] * b[:, 1] - b[:, 0] * a[:, 1]).item()
+        total_surface += torch.sum(a[:, 0] * b[:, 1] - b[:, 0] * a[:, 1])
         
         dists = torch.norm(a - b, dim=1)
-        total_perimeter += torch.sum(dists).item()
+        total_perimeter += torch.sum(dists)
         
     total_surface = abs(total_surface) / 2.0
     
@@ -124,7 +124,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     for t_edge, (pt_idx, vert_idx) in enumerate([(0, 2), (3, 2)]):
         has_vert = (check_idxs & (1 << pt_idx)) > 0
         if has_vert.any():
-            v_i = torch.full((has_vert.sum().item(),), vert_idx, dtype=torch.long, device=device)
+            v_i = torch.full((has_vert.sum(),), vert_idx, dtype=torch.long, device=device)
             v = vert_list[v_i]
             off = offsets[has_vert]
             pt = (v + off) * spacing_2d
@@ -133,11 +133,11 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     if len(all_vertices) > 0:
         all_pts = torch.cat(all_vertices, dim=0)
         unique_pts = torch.unique(all_pts, dim=0)
-        max_diameter = torch.cdist(unique_pts, unique_pts).max().item()
+        max_diameter = torch.cdist(unique_pts, unique_pts).max()
     else:
         max_diameter = 0.0
         
-    pixel_surface = M2D.sum().item() * spacing_2d[0].item() * spacing_2d[1].item()
+    pixel_surface = M2D.sum() * spacing_2d[0] * spacing_2d[1]
     
     # PCA
     coords = torch.nonzero(M2D, as_tuple=False).to(torch.float64) * spacing_2d
@@ -157,8 +157,8 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
             eigvals = torch.linalg.eigvalsh(cov)
             eigvals = torch.clamp(eigvals, min=0.0)
             eigvals = torch.sort(eigvals, descending=True).values
-            lambda_1 = eigvals[0].item()
-            lambda_2 = eigvals[1].item() if eigvals.shape[0] > 1 else 0.0
+            lambda_1 = eigvals[0]
+            lambda_2 = eigvals[1] if eigvals.shape[0] > 1 else 0.0
             
             major = 4.0 * math.sqrt(lambda_1)
             minor = 4.0 * math.sqrt(lambda_2)

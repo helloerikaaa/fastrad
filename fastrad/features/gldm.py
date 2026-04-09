@@ -51,7 +51,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         
     valid_dep = dependence
     
-    Nd = int(torch.max(valid_dep).item())
+    Nd = int(torch.max(valid_dep))
     
     if Nd == 0:
         return {}
@@ -59,7 +59,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     g = valid_gray - 1
     d = valid_dep - 1
     
-    max_gl = int(torch.max(ivector).item())
+    max_gl = int(torch.max(ivector))
     linear_indices = g * Nd + d
     matrix_counts = torch.bincount(linear_indices, minlength=max_gl*Nd).to(torch.float64)
     P_raw = matrix_counts[:max_gl*Nd].view(max_gl, Nd)
@@ -105,21 +105,21 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     ldhgle = torch.sum(P * (i_grid ** 2) * (j_grid ** 2)) / Ns
     
     features = {
-        "gldm:small_dependence_emphasis": sde.item(),
-        "gldm:large_dependence_emphasis": lde.item(),
-        "gldm:gray_level_non_uniformity": glnu.item(),
-        "gldm:gray_level_non_uniformity_normalized": glnun.item(),
-        "gldm:dependence_non_uniformity": dnu.item(),
-        "gldm:dependence_non_uniformity_normalized": dnun.item(),
-        "gldm:dependence_variance": dv.item(),
-        "gldm:gray_level_variance": glv.item(),
-        "gldm:dependence_entropy": de.item(),
-        "gldm:low_gray_level_emphasis": lgle.item(),
-        "gldm:high_gray_level_emphasis": hgle.item(),
-        "gldm:small_dependence_low_gray_level_emphasis": sdlgle.item(),
-        "gldm:small_dependence_high_gray_level_emphasis": sdhgle.item(),
-        "gldm:large_dependence_low_gray_level_emphasis": ldlgle.item(),
-        "gldm:large_dependence_high_gray_level_emphasis": ldhgle.item()
+        "gldm:small_dependence_emphasis": sde,
+        "gldm:large_dependence_emphasis": lde,
+        "gldm:gray_level_non_uniformity": glnu,
+        "gldm:gray_level_non_uniformity_normalized": glnun,
+        "gldm:dependence_non_uniformity": dnu,
+        "gldm:dependence_non_uniformity_normalized": dnun,
+        "gldm:dependence_variance": dv,
+        "gldm:gray_level_variance": glv,
+        "gldm:dependence_entropy": de,
+        "gldm:low_gray_level_emphasis": lgle,
+        "gldm:high_gray_level_emphasis": hgle,
+        "gldm:small_dependence_low_gray_level_emphasis": sdlgle,
+        "gldm:small_dependence_high_gray_level_emphasis": sdhgle,
+        "gldm:large_dependence_low_gray_level_emphasis": ldlgle,
+        "gldm:large_dependence_high_gray_level_emphasis": ldhgle
     }
     
     return features

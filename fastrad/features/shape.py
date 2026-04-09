@@ -44,7 +44,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         eigenvalues
     )
     eigenvalues, _ = torch.sort(eigenvalues) # small to large
-    eigen_l, eigen_m, eigen_h = eigenvalues[0].item(), eigenvalues[1].item(), eigenvalues[2].item()
+    eigen_l, eigen_m, eigen_h = eigenvalues[0], eigenvalues[1], eigenvalues[2]
     
     # Base features
     surface_volume_ratio = surface_area / mesh_volume if mesh_volume > 0 else 0.0

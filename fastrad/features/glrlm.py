@@ -90,7 +90,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
             lengths[active] += 1
 
         if lengths.numel() > 0:
-            m_len = torch.max(lengths).item()
+            m_len = torch.max(lengths)
             if m_len > max_length:
                 max_length = int(m_len)
                 
@@ -101,7 +101,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         return {}
         
     N_a = len(angles)
-    max_gl = int(torch.max(ivector).item())
+    max_gl = int(torch.max(ivector))
     P_glrlm_raw = torch.zeros((max_gl, Nr, N_a), dtype=torch.float64, device=device)
     
     for a_idx, (gray_levels, lengths) in enumerate(angle_results):
@@ -178,22 +178,22 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
     lrhgle = torch.mean(torch.sum(P * (i_grid ** 2) * (j_grid ** 2), dim=(0, 1)) / Ns)
     
     features = {
-        "glrlm:short_run_emphasis": sre.item(),
-        "glrlm:long_run_emphasis": lre.item(),
-        "glrlm:gray_level_non_uniformity": glnu.item(),
-        "glrlm:gray_level_non_uniformity_normalized": glnun.item(),
-        "glrlm:run_length_non_uniformity": rlnu.item(),
-        "glrlm:run_length_non_uniformity_normalized": rlnun.item(),
-        "glrlm:run_percentage": rp.item(),
-        "glrlm:gray_level_variance": glv.item(),
-        "glrlm:run_variance": rv.item(),
-        "glrlm:run_entropy": re_feat.item(),
-        "glrlm:low_gray_level_run_emphasis": lglre.item(),
-        "glrlm:high_gray_level_run_emphasis": hglre.item(),
-        "glrlm:short_run_low_gray_level_emphasis": srlgle.item(),
-        "glrlm:short_run_high_gray_level_emphasis": srhgle.item(),
-        "glrlm:long_run_low_gray_level_emphasis": lrlgle.item(),
-        "glrlm:long_run_high_gray_level_emphasis": lrhgle.item()
+        "glrlm:short_run_emphasis": sre,
+        "glrlm:long_run_emphasis": lre,
+        "glrlm:gray_level_non_uniformity": glnu,
+        "glrlm:gray_level_non_uniformity_normalized": glnun,
+        "glrlm:run_length_non_uniformity": rlnu,
+        "glrlm:run_length_non_uniformity_normalized": rlnun,
+        "glrlm:run_percentage": rp,
+        "glrlm:gray_level_variance": glv,
+        "glrlm:run_variance": rv,
+        "glrlm:run_entropy": re_feat,
+        "glrlm:low_gray_level_run_emphasis": lglre,
+        "glrlm:high_gray_level_run_emphasis": hglre,
+        "glrlm:short_run_low_gray_level_emphasis": srlgle,
+        "glrlm:short_run_high_gray_level_emphasis": srhgle,
+        "glrlm:long_run_low_gray_level_emphasis": lrlgle,
+        "glrlm:long_run_high_gray_level_emphasis": lrhgle
     }
     
     return features
