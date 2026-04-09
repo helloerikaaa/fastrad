@@ -20,3 +20,5 @@ class FeatureSettings:
     spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)
     force2D: bool = False
     force2Ddimension: int = 0
+    compile: bool = False
+    compile_mode: str = "reduce-overhead"

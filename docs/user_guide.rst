@@ -54,6 +54,8 @@ Object-Orientated Architecture
    - ``feature_classes`` (List[str]): Array mapping to strictly compute elements. Defaults to all 7 IBSI-compliant modules.
    - ``bin_width`` (float): Discretization resolution. The standard clinical pipeline recommends ``25.0`` for Hounsfield Units (CT scans).
    - ``device`` (str): Pass ``"cpu"`` for standard parallel execution, ``"cuda"`` for GPU VRAM offloading (requires NVIDIA hardware), or ``"auto"`` for dynamic physical detection routines.
+   - ``compile`` (bool): Enable native kernel fusion via ``torch.compile`` for advanced execution speedups over large populations (PyTorch 2.0+).
+   - ``compile_mode`` (str): Execution methodology for compilation. Defaults to ``"reduce-overhead"``.
 
 
 Extraction Workflow Execution

@@ -83,6 +83,20 @@ extractor = FeatureExtractor(settings_gpu)
 features = extractor.execute(image, mask)
 ```
 
+### Advanced: JIT Acceleration via `torch.compile`
+On PyTorch 2.0+, `fastrad` supports native kernel fusion to lower Python overhead and prevent traversing tensors repeatedly. This is particularly fast when running batch extraction over multiple images since the compiled core mathematical loops will be heavily optimized in C++.
+Enable it via `compile=True`:
+```python
+settings_compiled = FeatureSettings(
+    feature_classes=["glcm", "glrlm"],
+    bin_width=25.0,
+    device="cuda",
+    compile=True,
+    compile_mode="reduce-overhead" # PyTorch default compilation flag
+)
+```
+*(Note: JIT acceleration inherently contains a cold-start compilation overhead on the first executed image, so it is best utilized when processing patient cohorts rather than single-image evaluation. Additionally, Mac Apple Silicon MPS compatibility is currently limited in PyTorch, so fallback behavior may occur).*
+
 ## Documentation & Examples
 `fastrad` ships with an extensive set of clinical tutorials housed in the `examples/` directory of this repository. They demonstrate advanced applications using actual hospital dataset configurations:
 
