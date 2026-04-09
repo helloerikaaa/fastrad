@@ -22,3 +22,4 @@ class FeatureSettings:
     force2Ddimension: int = 0
     compile: bool = False
     compile_mode: str = "reduce-overhead"
+    amp: bool = False
