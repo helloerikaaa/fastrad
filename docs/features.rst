@@ -6,6 +6,8 @@ Features & Mathematical Formulations
 First Order Statistics
 ----------------------
 
+*(Note: Prior to feature extraction, `fastrad` supports native PyTorch GPU Mathematical filters mirroring PyRadiomics including `LoG`, `Square`, `SquareRoot`, `Logarithm`, and `Exponential`.)*
+
 First-order statistics describe the distribution of voxel intensities within the image region $X$ defined by the mask through basic and commonly used metrics. Let $N_p$ be the number of voxels, and $X(i)$ be the intensity of the $i$-th voxel.
 
 .. math::

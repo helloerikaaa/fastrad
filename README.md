@@ -46,26 +46,44 @@ pip install ".[cuda]"
 `fastrad` employs a feature extractor interface similar to `PyRadiomics` but significantly optimized for volume operations.
 
 ### Quick Start
+### Quick Start
 ```python
-from fastrad import MedicalImage, Mask, FeatureExtractor, FeatureSettings
+from fastrad import FeatureSettings, FeatureExtractor
+import fastrad
 
-# 1. Load an image (DICOM directory) and mask
-image = MedicalImage("/path/to/dicom_dir")
-mask = Mask("/path/to/mask.nrrd")
+# 1. Load and align an image and mask (automatically handles NIfTI/DICOM)
+# Automatically validates physical geometry and crops the tensor using SimpleITK
+img, mask = fastrad.load_and_align(
+    image_path="/path/to/image.nii.gz",
+    mask_path="/path/to/mask.nrrd",
+    resample_spacing=(1.0, 1.0, 1.0), # Optional: force isotropic resampling natively!
+    crop=True
+)
 
-# 2. Configure extractor settings 
+# 2. [Optional] Apply built-in Mathematical Image Filters natively on PyTorch GPU
+filter_params = {
+    "Original": {},
+    "LoG": {"sigma": [1.0, 3.0]}, # Laplacian of Gaussian strictly matched to PyRadiomics!
+    "Square": {},
+    "Logarithm": {}
+}
+filtered_images_dict = fastrad.apply_builtin_filters(img, filter_params)
+
+# 3. Configure extractor settings 
 settings = FeatureSettings(
     feature_classes=["firstorder", "shape", "glcm"], # specify needed features
     bin_width=25.0,
     device="auto" # use "cuda", "cpu", or "auto"
 )
 
-# 3. Extract Features
+# 4. Extract Features across generated filters
 extractor = FeatureExtractor(settings)
-features = extractor.execute(image, mask)
 
-for feature_name, value in features.items():
-    print(f"{feature_name}: {value}")
+for filter_name, filtered_img in filtered_images_dict.items():
+    print(f"--- Extracting {filter_name} ---")
+    features = extractor.extract(filtered_img, mask)
+    for feature_name, value in features.items():
+        print(f"{filter_name}_{feature_name}: {value}")
 ```
 
 ### CPU vs CUDA Performance
