@@ -36,8 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - release-build
-    environment:
-      name: pypi
     steps:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
