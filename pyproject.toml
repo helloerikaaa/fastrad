@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastrad"
-version = "2.0.2"
+version = "2.0.3"
 description = "GPU-accelerated Python library that reimplements pyradiomics with full feature parity"
 readme = "README.md"
 authors = [
