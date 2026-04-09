@@ -4,7 +4,7 @@ from fastrad.image import get_binned_image
 
 EPSILON = 1e-16
 
-def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
+def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = image_tensor.device
     
     binned_image, ivector = get_binned_image(image_tensor, mask_tensor, settings.bin_width)
@@ -197,3 +197,13 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     }
     
     return features
+
+_compiled_compute = None
+
+def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
+    global _compiled_compute
+    if settings.compile:
+        if _compiled_compute is None:
+            _compiled_compute = torch.compile(_compute_core, mode=settings.compile_mode)
+        return _compiled_compute(image_tensor, mask_tensor, settings)
+    return _compute_core(image_tensor, mask_tensor, settings)
