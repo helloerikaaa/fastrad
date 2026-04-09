@@ -27,10 +27,33 @@ class MedicalImage:
         Args:
             path: Path to the directory containing the DICOM files.
             
+        """
+        tensor, spacing = parse_dicom_dir(path)
+        return cls(tensor=tensor, spacing=spacing)
+
+    @classmethod
+    def from_nifti(cls, path: Union[str, Path]) -> "MedicalImage":
+        """
+        Creates a MedicalImage from a NIfTI format image file (.nii or .nii.gz).
+        
+        Args:
+            path: Path to the NIfTI file.
+            
         Returns:
             A new instantiated MedicalImage object with extracted spacing.
         """
-        tensor, spacing = parse_dicom_dir(path)
+        import nibabel as nib
+        import numpy as np
+        nii = nib.load(str(path))
+        data = nii.get_fdata().astype(np.float32)
+        if data.ndim == 3:
+            data = np.transpose(data, (2, 1, 0))
+        tensor = torch.from_numpy(data)
+        
+        header = nii.header
+        zooms = header.get_zooms()
+        spacing = (float(zooms[2]), float(zooms[1]), float(zooms[0])) if len(zooms) >= 3 else (1.0, 1.0, 1.0)
+        
         return cls(tensor=tensor, spacing=spacing)
 
 class Mask:
@@ -59,10 +82,38 @@ class Mask:
         Args:
             path: Path to the directory containing the DICOM ROIs.
             
+        """
+        tensor, spacing = parse_dicom_dir(path)
+        return cls(tensor=tensor, spacing=spacing)
+
+    @classmethod
+    def from_nifti(cls, path: Union[str, Path]) -> "Mask":
+        """
+        Creates a binary Mask from a NIfTI format image file (.nii or .nii.gz).
+        Voxels strictly greater than 0 are set to 1.
+        
+        Args:
+            path: Path to the NIfTI file.
+            
         Returns:
             A new instantiated binary Mask object with extracted spacing.
         """
-        tensor, spacing = parse_dicom_dir(path)
+        import nibabel as nib
+        import numpy as np
+        nii = nib.load(str(path))
+        data = nii.get_fdata().astype(np.float32)
+        # Reorder to (z, y, x) since nibabel loads as (x, y, z) typically, but 
+        # typically radiomics handles it. PyRadiomics expects specific orientation.
+        # usually z is the last axis in biological nifti, let's permute to match PyTorch (D, H, W).
+        if data.ndim == 3:
+            data = np.transpose(data, (2, 1, 0))
+        tensor = torch.from_numpy(data)
+        
+        header = nii.header
+        zooms = header.get_zooms()
+        # zooms is (x, y, z) typically, so spacing should be (z, y, x)
+        spacing = (float(zooms[2]), float(zooms[1]), float(zooms[0])) if len(zooms) >= 3 else (1.0, 1.0, 1.0)
+        
         return cls(tensor=tensor, spacing=spacing)
 
 def get_binned_image(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, bin_width: float) -> Tuple[torch.Tensor, torch.Tensor]:
