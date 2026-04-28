@@ -1,6 +1,5 @@
 import time
 import torch
-import numpy as np
 from fastrad import MedicalImage, Mask, FeatureSettings, DenseFeatureExtractor
 
 def run():

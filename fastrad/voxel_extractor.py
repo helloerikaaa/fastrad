@@ -1,7 +1,4 @@
 import torch
-import numpy as np
-from types import SimpleNamespace
-from typing import Dict, Any, Tuple
 from fastrad.settings import FeatureSettings
 from fastrad.image import MedicalImage, Mask
 from fastrad.extractor import FeatureExtractor
@@ -79,7 +76,7 @@ class VoxelFeatureExtractor:
                     
                     try:
                         features = self.extractor.extract(patch_image, patch_mask)
-                    except Exception as e:
+                    except Exception:
                         # Log but do not interrupt map spatial generation
                         # Empty patches trigger native ValueErrors in PyRadiomics architecture bounds
                         continue

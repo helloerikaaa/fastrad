@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [
     { name = "fastrad authors" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
     "torch",
     "pydicom",
@@ -27,7 +27,9 @@ cuda = [
     "cucim-cu12>=24.0"
 ]
 test = [
-    "pytest"
+    "pytest",
+    "ruff",
+    "ty"
 ]
 docs = [
     "sphinx>=7.0.0",
@@ -43,3 +45,13 @@ packages = ["fastrad"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = ["E402", "E701", "E712", "F841", "E722", "E741"]
+
+[tool.ty]
+# Configuration for Astral Ty

@@ -4,8 +4,6 @@ import SimpleITK as sitk
 from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 from pathlib import Path
-import os
-import time
 
 def compute_icc_2_1(data_matrix):
     """

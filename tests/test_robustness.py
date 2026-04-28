@@ -1,6 +1,5 @@
 import pytest
 import torch
-import logging
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 
 @pytest.fixture

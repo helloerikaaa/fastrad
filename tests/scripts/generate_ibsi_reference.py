@@ -1,7 +1,4 @@
 import json
-import nibabel as nib
-import numpy as np
-import SimpleITK as sitk
 from pathlib import Path
 from radiomics import featureextractor
 

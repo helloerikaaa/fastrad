@@ -1,12 +1,8 @@
-import time
 import torch
-import numpy as np
 import SimpleITK as sitk
 from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 from pathlib import Path
-import os
-import sys
 
 def run():
     print("Running Numerical Parity Benchmark with PyRadiomics on Clinical Data...")
