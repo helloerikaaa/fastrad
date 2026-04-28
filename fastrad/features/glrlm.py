@@ -196,7 +196,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         "glrlm:long_run_high_gray_level_emphasis": lrhgle
     }
     
-    return features
+    return features  # type: ignore
 
 _compiled_compute = None
 

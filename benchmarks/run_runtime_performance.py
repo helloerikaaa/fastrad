@@ -100,7 +100,6 @@ def run():
     if not (img_path.exists() and mask_path.exists()):
         return "Error: TCIA nrrd files not found."
         
-    import copy
     md = []
     md.append("## Section 3: Runtime Performance\n")
     

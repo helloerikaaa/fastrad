@@ -124,7 +124,7 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
     for t_edge, (pt_idx, vert_idx) in enumerate([(0, 2), (3, 2)]):
         has_vert = (check_idxs & (1 << pt_idx)) > 0
         if has_vert.any():
-            v_i = torch.full((has_vert.sum(),), vert_idx, dtype=torch.long, device=device)
+            v_i = torch.full((has_vert.sum(),), vert_idx, dtype=torch.long, device=device)  # type: ignore
             v = vert_list[v_i]
             off = offsets[has_vert]
             pt = (v + off) * spacing_2d
@@ -183,4 +183,4 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         "shape2D:Elongation": elongation
     }
     
-    return features
+    return features  # type: ignore

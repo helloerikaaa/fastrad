@@ -1,6 +1,5 @@
 import warnings
 import torch
-from typing import Dict, Any, Callable
 from .settings import FeatureSettings
 from .image import MedicalImage, Mask
 from .utils.device import resolve_device
@@ -158,7 +157,7 @@ class FeatureExtractor:
             
             # Enforce PyRadiomics float backward-compatibility natively
             if not self.settings.differentiable:
-                class_features = {k: v.item() if hasattr(v, "item") else v for k, v in class_features.items()}
+                class_features = {k: v.item() if hasattr(v, "item") else v for k, v in class_features.items()}  # type: ignore
                 
             features.update(class_features)
             

@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from typing import Dict, List
 import math
-import numpy as np
 
 from .image import MedicalImage
 from .logger import logger

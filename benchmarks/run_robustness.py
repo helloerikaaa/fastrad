@@ -2,10 +2,7 @@ import torch
 import SimpleITK as sitk
 from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
-from pathlib import Path
-import os
 import warnings
-import traceback
 import numpy as np
 
 def create_edge_case(t_shape, case_type):

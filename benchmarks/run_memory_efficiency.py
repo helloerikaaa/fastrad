@@ -1,12 +1,7 @@
-import tracemalloc
 import torch
-import numpy as np
 import SimpleITK as sitk
-from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 from pathlib import Path
-import os
-import gc
 
 def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple[float, float, float]):
     D, H, W = image_shape

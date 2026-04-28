@@ -1,6 +1,5 @@
 import torch
 from typing import Dict, Tuple, Union
-from .settings import FeatureSettings
 from .image import MedicalImage, Mask
 from .extractor import FeatureExtractor, _FEATURE_MAP
 from .logger import logger

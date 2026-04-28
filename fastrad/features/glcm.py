@@ -251,7 +251,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         "glcm:mcc": mcc,
     }
     
-    return features
+    return features  # type: ignore
 
 _compiled_compute = None
 

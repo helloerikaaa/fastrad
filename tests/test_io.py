@@ -1,7 +1,5 @@
 import os
-import pytest
 import torch
-import SimpleITK as sitk
 
 from fastrad import load_and_align
 
