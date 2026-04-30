@@ -4,7 +4,6 @@ from scipy.spatial import ConvexHull
 import torch
 from .shape_tables import gridAngles, vertList, triTable
 
-
 def calculate_mesh_features(mask_tensor, spacing):
     device = mask_tensor.device
     
@@ -117,6 +116,12 @@ def calculate_mesh_features(mask_tensor, spacing):
 
         # Max diameter of mesh is same as that of its convex hull
         max_3d_diameter = torch.cdist(hull_pts, hull_pts).max().item()
+
+        # For 2D diameters, we check pairwise elements that share the same coordinate
+        # PyRadiomics definition:
+        # diameter[0] -> a[0] == b[0] -> same Z -> Slice
+        # diameter[1] -> a[1] == b[1] -> same Y -> Column
+        # diameter[2] -> a[2] == b[2] -> same X -> Row
 
         # Iterate over z,x,y dims for max 2D diameters
         dims = [0,1,2]
