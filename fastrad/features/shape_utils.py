@@ -1,3 +1,6 @@
+import numpy as np
+from scipy.spatial import ConvexHull
+
 import torch
 from .shape_tables import gridAngles, vertList, triTable
 
@@ -105,25 +108,52 @@ def calculate_mesh_features(mask_tensor, spacing):
     if len(all_vertices_list) > 0:
         all_vertices = torch.cat(all_vertices_list, dim=0)
         unique_vertices = torch.unique(all_vertices, dim=0)
-        
-        # Compute pairwise distances
-        # dists will be shape (N, N)
-        dists = torch.cdist(unique_vertices, unique_vertices)
-        max_3d_diameter = dists.max().item()
-        
+
+        # Compute convex hull of vertices
+        verts_np = unique_vertices.cpu().numpy()
+        hull = ConvexHull(verts_np)
+        hull_pts = torch.tensor(verts_np[hull.vertices], device=unique_vertices.device)
+
+        # Max diameter of mesh is same as that of its convex hull
+        max_3d_diameter = torch.cdist(hull_pts, hull_pts).max().item()
+
         # For 2D diameters, we check pairwise elements that share the same coordinate
         # PyRadiomics definition:
         # diameter[0] -> a[0] == b[0] -> same Z -> Slice
         # diameter[1] -> a[1] == b[1] -> same Y -> Column
         # diameter[2] -> a[2] == b[2] -> same X -> Row
-        same_z = (unique_vertices[:, 0:1] == unique_vertices[:, 0:1].T)
-        max_2d_slice = torch.where(same_z, dists, torch.tensor(0.0, device=device)).max().item()
-        
-        same_y = (unique_vertices[:, 1:2] == unique_vertices[:, 1:2].T)
-        max_2d_col = torch.where(same_y, dists, torch.tensor(0.0, device=device)).max().item()
-        
-        same_x = (unique_vertices[:, 2:3] == unique_vertices[:, 2:3].T)
-        max_2d_row = torch.where(same_x, dists, torch.tensor(0.0, device=device)).max().item()
+
+        # Iterate over z,x,y dims for max 2D diameters
+        dims = [0,1,2]
+        max_2d_diameters = [0.0, 0.0, 0.0]
+
+        for i in dims:
+            sl = unique_vertices[:, i]
+            keep_dims = [j for j in dims if j != i]
+
+            for s in torch.unique(sl):
+                pts = unique_vertices[sl == s]
+
+                # Calculate plane rank to determine collinearity of points
+                pts_np = pts[:, keep_dims].cpu().numpy()
+                centered = pts_np - pts_np.mean(axis=0)
+                plane_rank = np.linalg.matrix_rank(centered)
+                
+                if plane_rank < 2:
+                    # If points are colinear, calculate all pairwise distances
+                    pts_t = torch.tensor(pts_np, device=pts.device)
+                    d = torch.cdist(torch.tensor(pts_np), torch.tensor(pts_np))
+                else:
+                    # If plane slice is truly 2D, only calculate convex hull distances
+                    hull = ConvexHull(pts_np)
+                    hull_pts = torch.tensor(pts_np[hull.vertices], device=pts.device)
+                    d = torch.cdist(hull_pts, hull_pts)
+            
+                max_2d_diameters[i] = max(max_2d_diameters[i], d.max().item())
+
+        # Unpack 2D max diameters
+        max_2d_slice, max_2d_col, max_2d_row = max_2d_diameters
+
     else:
         max_3d_diameter = 0.0
         max_2d_slice = 0.0
