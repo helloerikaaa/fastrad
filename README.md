@@ -158,6 +158,31 @@ The complete reproducibility archive for the revision is organized as follows:
 - **Publication Figures Generator**: [`benchmarks/generate_figures.py`](benchmarks/generate_figures.py)
 - **Pinned Environment**: [`environment.yml`](environment.yml) and [`requirements.lock`](requirements.lock)
 
+## Citation
+
+If you use `fastrad` in your research, benchmark against it, or build upon this codebase, please cite the official preprint:
+
+```bibtex
+@article{sanchez2026fastrad,
+  title     = {fastrad: A GPU-accelerated Python library for calculating radiomics features},
+  author    = {S\'anchez-Femat, Erika and Celaya-Padilla, Jos\'e-Mar\'ia and Galv\'an-Tejada, Carlos-Eric},
+  journal   = {SSRN Preprint},
+  year      = {2026},
+  doi       = {10.2139/ssrn.6436486},
+  url       = {[https://doi.org/10.2139/ssrn.6436486](https://doi.org/10.2139/ssrn.6436486)}
+```
+}
+
+## Authors & Academic Integrity
+This repository is the official upstream implementation of fastrad, developed by [Erika Sánchez-Femat](https://scholar.google.com/citations?user=aBmYpHEAAAAJ&hl), [José-María Celaya-Padilla](https://scholar.google.com/citations?user=odTyJfgAAAAJ&hl), and [Carlos-Eric Galván-Tejada](https://scholar.google.com/citations?user=lNt5La4AAAAJ&hl).
+
+
+- Official Repository: https://github.com/helloerikaaa/fastrad
+- Preprint: https://doi.org/10.2139/ssrn.6436486
+
+
+**Notice on Derivative Works and Forks**: As required by Section 4 of the Apache License 2.0, any modified or derivative versions of this codebase must retain all original copyright, patent, and attribution notices, and prominently state that the code was modified from the original fastrad project.
+
 ## License
 `fastrad` is licensed under the **Apache License, Version 2.0**. See the [LICENSE](LICENSE) file for terms and conditions.
 

@@ -45,7 +45,8 @@ cuda = [
 test = [
     "pytest",
     "ruff",
-    "ty"
+    "ty",
+    "pyradiomics @ git+https://github.com/AIM-Harvard/pyradiomics.git@v3.1.0"
 ]
 docs = [
     "sphinx>=7.0.0",
