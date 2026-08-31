@@ -11,6 +11,18 @@ authors = [
     { name = "fastrad authors" }
 ]
 requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Healthcare Industry",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+keywords = ["radiomics", "biomarkers", "pytorch", "cuda", "pyradiomics", "ibsi", "medical-imaging"]
 dependencies = [
     "torch",
     "pydicom",
@@ -18,7 +30,11 @@ dependencies = [
     "scipy",
     "loguru",
     "SimpleITK",
-    "nibabel"
+    "nibabel",
+    "requests>=2.33.1",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "pandas>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -55,3 +71,5 @@ ignore = ["E402", "E701", "E712", "F841", "E722", "E741"]
 
 [tool.ty]
 # Configuration for Astral Ty
+[tool.ty.environment]
+root = ["."]
