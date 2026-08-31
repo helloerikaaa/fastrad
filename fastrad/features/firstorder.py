@@ -104,4 +104,4 @@ def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: Fea
         "firstorder:uniformity": uniformity,
     }
     
-    return features
+    return features  # type: ignore

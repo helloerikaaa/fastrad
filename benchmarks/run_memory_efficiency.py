@@ -1,12 +1,10 @@
-import tracemalloc
 import torch
-import numpy as np
 import SimpleITK as sitk
-from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 from pathlib import Path
-import os
-import gc
+import subprocess
+import sys
+import csv
 
 def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple[float, float, float]):
     D, H, W = image_shape
@@ -25,9 +23,6 @@ def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple[float, f
     mask = torch.zeros(image_shape, dtype=torch.float32)
     mask[dist_sq <= 1.0] = 1.0
     return mask
-
-import subprocess
-import sys
 
 def measure_peak_ram_subprocess(lib_name: str, radius: float) -> float:
     script = f'''
@@ -106,18 +101,23 @@ def run():
     if not img_path.exists():
         return "Error: TCIA image not found."
         
+    output_dir = project_root / "benchmarks" / "outputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     md = []
     md.append("## Section 4: Memory Efficiency\n")
     
     # 4.1 Peak RAM vs ROI size
     print("  -> Profiling CPU RAM scaling against ROI size (4.1)...")
     md.append("### 4.1 Peak RAM vs ROI Size (CPU)\n")
-    md.append("| Radius (mm) | Voxel Count | PyRadiomics RAM (MB) | fastrad CPU RAM (MB) | Memory Reduction |")
+    md.append("| Radius (mm) | Voxel Count | PyRadiomics RAM (MB) | fastrad CPU RAM (MB) | Memory Overhead Ratio |")
     md.append("|---|---|---|---|---|")
     
     img_sitk = sitk.ReadImage(str(img_path))
     img_t = torch.from_numpy(sitk.GetArrayFromImage(img_sitk)).float()
     spacing = img_sitk.GetSpacing()[::-1]
+    
+    mem_records = []
     
     for r in [5, 10, 15, 20, 25, 30]:
         mask_t = create_spherical_mask(img_t.shape, r, spacing)
@@ -126,11 +126,28 @@ def run():
         pyrad_mem = measure_peak_ram_subprocess("pyrad", r)
         fastrad_mem = measure_peak_ram_subprocess("fastrad", r)
         
-        reduction = pyrad_mem / fastrad_mem if fastrad_mem > 0 else 0
-        md.append(f"| {r} | {n_voxels} | {pyrad_mem:.2f} | {fastrad_mem:.2f} | {reduction:.2f}x |")
+        ratio = (fastrad_mem / pyrad_mem) if pyrad_mem > 0 else 0
+        md.append(f"| {r} | {n_voxels} | {pyrad_mem:.2f} | {fastrad_mem:.2f} | {ratio:.2f}x |")
+        
+        mem_records.append({
+            "radius_mm": r,
+            "voxel_count": n_voxels,
+            "pyradiomics_ram_mb": pyrad_mem,
+            "fastrad_cpu_ram_mb": fastrad_mem,
+            "overhead_ratio": ratio
+        })
         
     md.append("\n")
     
+    # Save CSV
+    csv_path = output_dir / "memory_scaling.csv"
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=[
+            "radius_mm", "voxel_count", "pyradiomics_ram_mb", "fastrad_cpu_ram_mb", "overhead_ratio"
+        ])
+        writer.writeheader()
+        writer.writerows(mem_records)
+        
     # 4.2 GPU VRAM Profile
     print("  -> Profiling GPU VRAM per feature class (4.2)...")
     md.append("### 4.2 GPU VRAM Profile\n")
@@ -155,6 +172,7 @@ def run():
             
             peak_bytes = torch.cuda.max_memory_allocated()
             return peak_bytes / (1024**2)
+            
         classes = ["firstorder", "shape", "glcm", "glrlm", "glszm", "gldm", "ngtdm"]
         for cls in classes:
             vram = profile_vram([cls])

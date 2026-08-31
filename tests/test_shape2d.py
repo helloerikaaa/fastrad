@@ -1,9 +1,8 @@
 import os
 import pytest
-import re
 import SimpleITK as sitk
 from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+from fastrad import FeatureSettings
 import numpy as np
 
 def to_fastrad_key(pyrad_key):
@@ -22,7 +21,6 @@ def test_shape2d_cpu():
     img_dir = os.path.join(base_dir, "fixtures", "image")
     mask_dir = os.path.join(base_dir, "fixtures", "mask")
     
-    import make_fixtures
     # Shape 2D requires size=1 mask dimension. Create one dynamically.
     image_vol = np.random.randint(0, 100, size=(5, 5, 5), dtype=np.uint16)
     mask_vol = np.zeros((5, 5, 5), dtype=np.uint8)

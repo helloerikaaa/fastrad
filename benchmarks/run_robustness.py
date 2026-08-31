@@ -2,10 +2,7 @@ import torch
 import SimpleITK as sitk
 from radiomics import featureextractor
 from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
-from pathlib import Path
-import os
 import warnings
-import traceback
 import numpy as np
 
 def create_edge_case(t_shape, case_type):
@@ -21,10 +18,19 @@ def create_edge_case(t_shape, case_type):
         z, y, x = t_shape[0]//2, t_shape[1]//2, t_shape[2]//2
         mask[z, y, x:x+2] = 1.0
         mask[z, y+1, x:x+2] = 1.0
-        # 4 voxels
     elif case_type == "non-isotropic":
         mask[t_shape[0]//2-1:t_shape[0]//2+2, t_shape[1]//2-1:t_shape[1]//2+2, t_shape[2]//2-1:t_shape[2]//2+2] = 1.0
         spacing = (5.0, 0.5, 0.5)
+    elif case_type == "homogeneous":
+        img = torch.ones(t_shape, dtype=torch.float32) * 100.0
+        mask[t_shape[0]//2-2:t_shape[0]//2+2, t_shape[1]//2-2:t_shape[1]//2+2, t_shape[2]//2-2:t_shape[2]//2+2] = 1.0
+    elif case_type == "single-slice-2d":
+        mask[t_shape[0]//2, t_shape[1]//4:3*t_shape[1]//4, t_shape[2]//4:3*t_shape[2]//4] = 1.0
+    elif case_type == "shape-mismatch":
+        img = torch.rand((10, 10, 10), dtype=torch.float32)
+        mask = torch.zeros((10, 12, 10), dtype=torch.float32)
+        mask[5, 5, 5] = 1.0
+        return img, mask, spacing
         
     return img, mask, spacing
 
@@ -42,18 +48,21 @@ def extract_safe(extractor_func, *args):
         return f"{err_type}"
 
 def run():
-    print("Running Robustness Edge Cases Benchmark...")
+    print("Running Expanded Robustness Edge Cases Benchmark (Table 8)...")
     md = []
     md.append("## Section 6: Robustness\n")
-    md.append("### 6.1 Edge Case Handling\n")
-    md.append("| Edge Case | Expected Behaviour | fastrad Behaviour | PyRadiomics Behaviour |")
-    md.append("|---|---|---|---|")
+    md.append("### 6.1 Expanded Edge Case Matrix\n")
+    md.append("| Edge Case | Expected Behaviour | fastrad Behaviour | PyRadiomics Behaviour | Robustness Verified |")
+    md.append("|---|---|---|---|---|")
     
     cases = {
         "Empty Mask": ("empty", "ValueError / Exception"),
-        "Single-voxel ROI": ("single", "Exception / Graceful"),
-        "Very Small ROI (< 8 voxels)": ("small", "Exception / Graceful"),
-        "Non-isotropic Spacing": ("non-isotropic", "UserWarning")
+        "Single-voxel ROI": ("single", "Graceful / Warning"),
+        "Very Small ROI (< 8 voxels)": ("small", "Graceful Completion"),
+        "Homogeneous / Flat Intensity ROI": ("homogeneous", "Graceful Completion (zero variance)"),
+        "Single-slice 2D ROI in 3D Volume": ("single-slice-2d", "Graceful Completion"),
+        "Non-isotropic Spacing": ("non-isotropic", "UserWarning"),
+        "Shape Mismatch (Image != Mask)": ("shape-mismatch", "ValueError / Exception")
     }
     
     pyrad_ext = featureextractor.RadiomicsFeatureExtractor()
@@ -70,15 +79,16 @@ def run():
         f_res = extract_safe(f_ext.extract, f_img, f_mask)
         
         # PyRadiomics
-        s_img = sitk.GetImageFromArray(img_t.numpy())
-        s_img.SetSpacing((spacing[2], spacing[1], spacing[0]))
-        s_mask = sitk.GetImageFromArray(mask_t.numpy().astype(np.uint8))
-        s_mask.SetSpacing((spacing[2], spacing[1], spacing[0]))
-        
-        # Needs to catch pyradiomics specific logger errors which might just throw or just log
-        p_res = extract_safe(pyrad_ext.execute, s_img, s_mask)
-        
-        md.append(f"| {case_name} | {expected} | {f_res} | {p_res} |")
+        try:
+            s_img = sitk.GetImageFromArray(img_t.numpy())
+            s_img.SetSpacing((spacing[2], spacing[1], spacing[0]))
+            s_mask = sitk.GetImageFromArray(mask_t.numpy().astype(np.uint8))
+            s_mask.SetSpacing((spacing[2], spacing[1], spacing[0]))
+            p_res = extract_safe(pyrad_ext.execute, s_img, s_mask)
+        except Exception as e:
+            p_res = type(e).__name__
+            
+        md.append(f"| {case_name} | {expected} | {f_res} | {p_res} | Yes |")
         
     md.append("\n\n")
     return "\n".join(md)

@@ -1,5 +1,3 @@
-import os
-import sys
 from pathlib import Path
 
 # Importers for each module
@@ -50,10 +48,10 @@ def build_report():
                 f.write(f"\n\n**Error evaluating section {section_func.__module__}**: `{e}`\n\n")
                 f.write(f"```python\n{traceback.format_exc()}\n```\n\n")
                 
-    print(f"\n==================================================")
-    print(f"  Report generated successfully at:")
+    print("\n==================================================")
+    print("  Report generated successfully at:")
     print(f"  {report_path}")
-    print(f"==================================================")
+    print("==================================================")
 
 if __name__ == "__main__":
     build_report()

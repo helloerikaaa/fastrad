@@ -1,6 +1,4 @@
 import os
-import pytest
-import numpy as np
 
 from fastrad import MedicalImage, apply_builtin_filters
 

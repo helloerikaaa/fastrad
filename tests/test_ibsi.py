@@ -1,4 +1,3 @@
-import os
 import urllib.request
 import nibabel as nib
 import numpy as np

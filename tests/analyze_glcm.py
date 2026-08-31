@@ -1,5 +1,3 @@
-import sys
-import os
 import SimpleITK as sitk
 from radiomics import glcm
 import make_fixtures

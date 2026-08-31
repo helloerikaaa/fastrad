@@ -8,13 +8,12 @@ EPSILON = 1e-16
 import numpy as np
 
 def _label_connected_components(mask_tensor: torch.Tensor) -> torch.Tensor:
-    import numpy as np
     structure = np.ones((3, 3, 3), dtype=int) if mask_tensor.ndim == 3 else np.ones((3, 3), dtype=int)
     
     if mask_tensor.device.type == "cuda":
         try:
-            import cupy as cp
-            from cupyx.scipy.ndimage import label as cupy_label
+            import cupy as cp  # type: ignore
+            from cupyx.scipy.ndimage import label as cupy_label  # type: ignore
             
             # Transfer tensor to CuPy DLPack interface for zero-copy 
             if hasattr(torch, "from_dlpack"):
@@ -72,7 +71,6 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         return {}
         
     import scipy.ndimage
-    import numpy as np
     
     zero_tensor = torch.tensor([0], dtype=img_int.dtype, device=device)
     _, inverse_indices = torch.unique(torch.cat((zero_tensor, img_int.view(-1))), return_inverse=True)
@@ -193,7 +191,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         "glszm:large_area_high_gray_level_emphasis": lahgle
     }
     
-    return features
+    return features  # type: ignore
 
 _compiled_compute = None
 

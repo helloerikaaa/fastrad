@@ -6,7 +6,6 @@ mimicking the exact workflow of PyRadiomics (including dynamic SITK resizing and
 complex Mathematical Filter combinations).
 """
 
-import sys
 import tempfile
 import numpy as np
 import SimpleITK as sitk

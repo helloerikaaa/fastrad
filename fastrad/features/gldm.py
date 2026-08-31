@@ -122,7 +122,7 @@ def _compute_core(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, setting
         "gldm:large_dependence_high_gray_level_emphasis": ldhgle
     }
     
-    return features
+    return features  # type: ignore
 
 _compiled_compute = None
 

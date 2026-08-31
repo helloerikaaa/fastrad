@@ -45,13 +45,13 @@ class MedicalImage:
         import nibabel as nib
         import numpy as np
         nii = nib.load(str(path))
-        data = nii.get_fdata().astype(np.float32)
+        data = nii.get_fdata().astype(np.float32)  # type: ignore
         if data.ndim == 3:
             data = np.transpose(data, (2, 1, 0))
         tensor = torch.from_numpy(data)
         
         header = nii.header
-        zooms = header.get_zooms()
+        zooms = header.get_zooms()  # type: ignore
         spacing = (float(zooms[2]), float(zooms[1]), float(zooms[0])) if len(zooms) >= 3 else (1.0, 1.0, 1.0)
         
         return cls(tensor=tensor, spacing=spacing)
@@ -101,7 +101,7 @@ class Mask:
         import nibabel as nib
         import numpy as np
         nii = nib.load(str(path))
-        data = nii.get_fdata().astype(np.float32)
+        data = nii.get_fdata().astype(np.float32)  # type: ignore
         # Reorder to (z, y, x) since nibabel loads as (x, y, z) typically, but 
         # typically radiomics handles it. PyRadiomics expects specific orientation.
         # usually z is the last axis in biological nifti, let's permute to match PyTorch (D, H, W).
@@ -110,7 +110,7 @@ class Mask:
         tensor = torch.from_numpy(data)
         
         header = nii.header
-        zooms = header.get_zooms()
+        zooms = header.get_zooms()  # type: ignore
         # zooms is (x, y, z) typically, so spacing should be (z, y, x)
         spacing = (float(zooms[2]), float(zooms[1]), float(zooms[0])) if len(zooms) >= 3 else (1.0, 1.0, 1.0)
         

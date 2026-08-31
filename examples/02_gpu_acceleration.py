@@ -79,9 +79,9 @@ def main():
         gpu_duration = run_extraction(device="cuda", image=image, mask=mask)
         
         speedup = cpu_duration / gpu_duration
-        print(f"\n=======================================================")
+        print("\n=======================================================")
         print(f"CUDA OVERALL SPEEDUP: {speedup:.2f}x faster vs single CPU extraction")
-        print(f"=======================================================\n")
+        print("=======================================================\n")
     else:
         print("\nSkipping CUDA comparison (Hardware not detected).")
 

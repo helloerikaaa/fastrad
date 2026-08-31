@@ -1,8 +1,6 @@
-import os
 import requests
 import zipfile
 import io
-import time
 from pathlib import Path
 
 def get_rider_pairs(limit=10):

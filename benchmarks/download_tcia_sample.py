@@ -1,7 +1,6 @@
 import os
 import requests
 import zipfile
-import json
 from pathlib import Path
 
 # The Cancer Imaging Archive (TCIA) REST API URLs

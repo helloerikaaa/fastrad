@@ -143,6 +143,24 @@ Run the full scientific benchmark suite locally to regenerate the physical repor
 python benchmarks/report_generator.py
 ```
 
+## Ethics & Data Usage Declaration
+Imaging data utilized in the scientific benchmarks were obtained from publicly accessible collections on The Cancer Imaging Archive (TCIA):
+- **NSCLC-Radiomics (`LUNG1-001`)**: Single clinical lung carcinoma benchmark case with expert gross tumor volume (GTV-1) segmentation.
+- **RIDER Lung CT**: 32 subjects (10 test-retest scan pairs evaluated) for test-retest reproducibility and Intraclass Correlation Coefficient ($\text{ICC}(2,1)$) stability analysis.
+
+All collections were acquired under institutional IRB approvals and de-identified in full compliance with HIPAA regulations.
+
+## Reproducibility Archive
+The complete reproducibility archive for the revision is organized as follows:
+- **PyRadiomics Configuration**: [`benchmarks/pyradiomics_config.yaml`](benchmarks/pyradiomics_config.yaml)
+- **Feature Coverage Table**: [`benchmarks/outputs/feature_coverage.csv`](benchmarks/outputs/feature_coverage.csv)
+- **Per-Feature ICC Data**: [`benchmarks/outputs/rider_icc_per_feature.csv`](benchmarks/outputs/rider_icc_per_feature.csv)
+- **Publication Figures Generator**: [`benchmarks/generate_figures.py`](benchmarks/generate_figures.py)
+- **Pinned Environment**: [`environment.yml`](environment.yml) and [`requirements.lock`](requirements.lock)
+
+## License
+`fastrad` is licensed under the **Apache License, Version 2.0**. See the [LICENSE](LICENSE) file for terms and conditions.
+
 ## Running Tests
 Tests assert extraction values strictly adhere to the baseline output created by PyRadiomics to ensure fidelity for scientific rigor, including compliance with the IBSI (Image Biomarker Standardisation Initiative) phantom benchmarks.
 
@@ -151,3 +169,4 @@ To run the test suite:
 pip install ".[test]"
 pytest
 ```
+

@@ -6,7 +6,6 @@ from pathlib import Path
 from fastrad.settings import FeatureSettings
 from fastrad.extractor import FeatureExtractor
 from fastrad.image import MedicalImage, Mask
-import os
 
 def run():
     print("Running IBSI Compliance Benchmark...")
