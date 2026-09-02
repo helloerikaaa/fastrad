@@ -1,8 +1,11 @@
 import torch
-from fastrad.settings import FeatureSettings
-from fastrad.image import MedicalImage, Mask
+
 from fastrad.extractor import FeatureExtractor
+from fastrad.image import Mask, MedicalImage
+from fastrad.settings import FeatureSettings
+
 from .logger import logger
+
 
 class VoxelFeatureExtractor:
     """
@@ -82,7 +85,7 @@ class VoxelFeatureExtractor:
                         continue
                         
                     if first_pass:
-                        for key in features.keys():
+                        for key in features:
                             output_maps[key] = torch.zeros(img_tensor.shape, dtype=torch.float32, device=device)
                         first_pass = False
                         

@@ -1,7 +1,9 @@
-import torch
 from pathlib import Path
-from typing import Union, Tuple
+
+import torch
+
 from .utils.dicom import parse_dicom_dir
+
 
 class MedicalImage:
     """
@@ -11,16 +13,16 @@ class MedicalImage:
         tensor (torch.Tensor): The 3D image array as a PyTorch FloatTensor.
         spacing (Tuple[float, float, float]): The physical voxel dimensions (z, y, x).
     """
-    def __init__(self, tensor: torch.Tensor, spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)):
+    def __init__(self, tensor: torch.Tensor, spacing: tuple[float, float, float] = (1.0, 1.0, 1.0)):
         self.tensor = tensor
         self.spacing = spacing
 
-    def to(self, device: Union[str, torch.device]) -> "MedicalImage":
+    def to(self, device: str | torch.device) -> "MedicalImage":
         """Moves the underlying tensor to the specified device."""
         return MedicalImage(self.tensor.to(device), self.spacing)
 
     @classmethod
-    def from_dicom(cls, path: Union[str, Path]) -> "MedicalImage":
+    def from_dicom(cls, path: str | Path) -> "MedicalImage":
         """
         Creates a MedicalImage from a directory containing DICOM slices.
         
@@ -32,7 +34,7 @@ class MedicalImage:
         return cls(tensor=tensor, spacing=spacing)
 
     @classmethod
-    def from_nifti(cls, path: Union[str, Path]) -> "MedicalImage":
+    def from_nifti(cls, path: str | Path) -> "MedicalImage":
         """
         Creates a MedicalImage from a NIfTI format image file (.nii or .nii.gz).
         
@@ -64,17 +66,17 @@ class Mask:
         tensor (torch.Tensor): The 3D binary mask array as a PyTorch FloatTensor.
         spacing (Tuple[float, float, float]): The physical voxel dimensions (z, y, x).
     """
-    def __init__(self, tensor: torch.Tensor, spacing: Tuple[float, float, float] = (1.0, 1.0, 1.0)):
+    def __init__(self, tensor: torch.Tensor, spacing: tuple[float, float, float] = (1.0, 1.0, 1.0)):
         # Ensure mask is binary (0 or 1)
         self.tensor = (tensor > 0).to(torch.float32)
         self.spacing = spacing
 
-    def to(self, device: Union[str, torch.device]) -> "Mask":
+    def to(self, device: str | torch.device) -> "Mask":
         """Moves the underlying tensor to the specified device."""
         return Mask(self.tensor.to(device), self.spacing)
 
     @classmethod
-    def from_dicom(cls, path: Union[str, Path]) -> "Mask":
+    def from_dicom(cls, path: str | Path) -> "Mask":
         """
         Creates a binary Mask from a directory containing DICOM slices.
         Voxels strictly greater than 0 are set to 1.
@@ -87,7 +89,7 @@ class Mask:
         return cls(tensor=tensor, spacing=spacing)
 
     @classmethod
-    def from_nifti(cls, path: Union[str, Path]) -> "Mask":
+    def from_nifti(cls, path: str | Path) -> "Mask":
         """
         Creates a binary Mask from a NIfTI format image file (.nii or .nii.gz).
         Voxels strictly greater than 0 are set to 1.
@@ -116,7 +118,7 @@ class Mask:
         
         return cls(tensor=tensor, spacing=spacing)
 
-def get_binned_image(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, bin_width: float) -> Tuple[torch.Tensor, torch.Tensor]:
+def get_binned_image(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, bin_width: float) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Computes PyRadiomics-compatible binning.
     

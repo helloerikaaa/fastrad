@@ -1,8 +1,9 @@
 import numpy as np
+import torch
 from scipy.spatial import ConvexHull
 
-import torch
-from .shape_tables import gridAngles, vertList, triTable
+from .shape_tables import gridAngles, triTable, vertList
+
 
 def calculate_mesh_features(mask_tensor, spacing):
     device = mask_tensor.device

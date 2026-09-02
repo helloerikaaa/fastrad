@@ -1,11 +1,14 @@
 import json
+from pathlib import Path
+
+import nibabel as nib
 import numpy as np
 import torch
-import nibabel as nib
-from pathlib import Path
-from fastrad.settings import FeatureSettings
+
 from fastrad.extractor import FeatureExtractor
-from fastrad.image import MedicalImage, Mask
+from fastrad.image import Mask, MedicalImage
+from fastrad.settings import FeatureSettings
+
 
 def run():
     print("Running IBSI Compliance Benchmark...")

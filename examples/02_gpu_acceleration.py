@@ -12,8 +12,11 @@ Requirements:
 """
 
 import time
+
 import torch
-from fastrad import MedicalImage, Mask, FeatureExtractor, FeatureSettings
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def create_large_synthetic_volume():
     """Generates a large 128x128x128 synthetic medical dataset for benchmarking."""

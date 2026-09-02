@@ -1,12 +1,13 @@
 import os
-import torch
-import SimpleITK as sitk
-import numpy as np
-from typing import Tuple, Optional, Union
 from pathlib import Path
 
-from .image import MedicalImage, Mask
+import numpy as np
+import SimpleITK as sitk
+import torch
+
+from .image import Mask, MedicalImage
 from .logger import logger
+
 
 def _check_geometry_match(image_sitk: sitk.Image, mask_sitk: sitk.Image, tolerance: float = 1e-4) -> bool:
     """
@@ -27,12 +28,9 @@ def _check_geometry_match(image_sitk: sitk.Image, mask_sitk: sitk.Image, toleran
     if np.max(np.abs(d1 - d2)) > tolerance:
         return False
         
-    if image_sitk.GetSize() != mask_sitk.GetSize():
-        return False
-        
-    return True
+    return image_sitk.GetSize() == mask_sitk.GetSize()
 
-def resample_to_isotropic(image: sitk.Image, mask: sitk.Image, target_spacing: Tuple[float, float, float]) -> Tuple[sitk.Image, sitk.Image]:
+def resample_to_isotropic(image: sitk.Image, mask: sitk.Image, target_spacing: tuple[float, float, float]) -> tuple[sitk.Image, sitk.Image]:
     """
     Resamples an image and mask natively to a forced isotropic target spacing.
     Uses generic B-Spline for continuous intensities and Nearest-Neighbor strictly for categorical masks.
@@ -44,9 +42,9 @@ def resample_to_isotropic(image: sitk.Image, mask: sitk.Image, target_spacing: T
     
     # Calculate dimensional bounds mapping continuously
     new_size = [
-        int(round(orig_size[0] * (orig_spacing[0] / target_spacing[0]))),
-        int(round(orig_size[1] * (orig_spacing[1] / target_spacing[1]))),
-        int(round(orig_size[2] * (orig_spacing[2] / target_spacing[2])))
+        round(orig_size[0] * (orig_spacing[0] / target_spacing[0])),
+        round(orig_size[1] * (orig_spacing[1] / target_spacing[1])),
+        round(orig_size[2] * (orig_spacing[2] / target_spacing[2]))
     ]
     
     # Standard Continuous Image interpolation
@@ -75,7 +73,7 @@ def resample_to_isotropic(image: sitk.Image, mask: sitk.Image, target_spacing: T
     
     return img_res, mask_res
 
-def crop_to_bbox(image: sitk.Image, mask: sitk.Image, label: int = 1, pad: int = 0) -> Tuple[sitk.Image, sitk.Image]:
+def crop_to_bbox(image: sitk.Image, mask: sitk.Image, label: int = 1, pad: int = 0) -> tuple[sitk.Image, sitk.Image]:
     """
     Crops the images tightly adhering around the label constraint bound to dramatically accelerate GPU throughput.
     """
@@ -104,7 +102,7 @@ def crop_to_bbox(image: sitk.Image, mask: sitk.Image, label: int = 1, pad: int =
     
     return img_crop, mask_crop
 
-def _sitk_to_tensor(sitk_img: sitk.Image) -> Tuple[torch.Tensor, Tuple[float, float, float]]:
+def _sitk_to_tensor(sitk_img: sitk.Image) -> tuple[torch.Tensor, tuple[float, float, float]]:
     """
     Translates a SimpleITK object explicitly into contiguous PyTorch bindings correctly swapping Z, Y, X layout.
     """
@@ -115,7 +113,7 @@ def _sitk_to_tensor(sitk_img: sitk.Image) -> Tuple[torch.Tensor, Tuple[float, fl
     spacing_zyx = (float(spacing[2]), float(spacing[1]), float(spacing[0]))
     return torch.from_numpy(data), spacing_zyx
 
-def _read_sitk_image(path: Union[str, Path]) -> sitk.Image:
+def _read_sitk_image(path: str | Path) -> sitk.Image:
     """
     Safely reads DICOM directories or single NIfTI/NRRD volume files smoothly mimicking legacy I/O bindings.
     """
@@ -130,7 +128,7 @@ def _read_sitk_image(path: Union[str, Path]) -> sitk.Image:
     else:
         return sitk.ReadImage(path_str)
 
-def load_and_align(image_path: Union[str, Path], mask_path: Union[str, Path], resample_spacing: Optional[Tuple[float, float, float]] = None, crop: bool = True) -> Tuple[MedicalImage, Mask]:
+def load_and_align(image_path: str | Path, mask_path: str | Path, resample_spacing: tuple[float, float, float] | None = None, crop: bool = True) -> tuple[MedicalImage, Mask]:
     """
     Core entrypoint matching the PyRadiomics `pyradiomics.imageoperations` logic exactly.
     """

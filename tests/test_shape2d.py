@@ -1,9 +1,12 @@
 import os
+
+import numpy as np
 import pytest
 import SimpleITK as sitk
 from radiomics import featureextractor
+
 from fastrad import FeatureSettings
-import numpy as np
+
 
 def to_fastrad_key(pyrad_key):
     if not pyrad_key.startswith("original_shape2D_"):
@@ -49,6 +52,7 @@ def test_shape2d_cpu():
     # Since fastrad expects DICOMs from disk for normal execution, we can bypass MedicalImage 
     # to feed it directly or temporarily save the tweaked arrays.
     import torch
+
     from fastrad.features import shape2d
     
     img_t = torch.from_numpy(image_vol).float()

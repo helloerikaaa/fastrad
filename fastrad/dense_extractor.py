@@ -1,8 +1,10 @@
+
 import torch
-from typing import Dict, Tuple, Union
-from .image import MedicalImage, Mask
-from .extractor import FeatureExtractor, _FEATURE_MAP
+
+from .extractor import _FEATURE_MAP, FeatureExtractor
+from .image import Mask, MedicalImage
 from .logger import logger
+
 
 class DenseFeatureExtractor(FeatureExtractor):
     """
@@ -12,8 +14,8 @@ class DenseFeatureExtractor(FeatureExtractor):
     def extract_dense(self, 
                       image: MedicalImage, 
                       mask: Mask, 
-                      kernel_size: Union[int, Tuple[int, int, int]], 
-                      stride: Union[int, Tuple[int, int, int]] = 1) -> Dict[str, torch.Tensor]:
+                      kernel_size: int | tuple[int, int, int], 
+                      stride: int | tuple[int, int, int] = 1) -> dict[str, torch.Tensor]:
         """
         Executes dense feature extraction on the given Image and Mask.
         

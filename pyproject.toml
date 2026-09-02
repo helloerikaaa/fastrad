@@ -68,7 +68,7 @@ line-length = 88
 target-version = "py312"
 
 [tool.ruff.lint]
-ignore = ["E402", "E701", "E712", "F841", "E722", "E741"]
+ignore = ["E402", "E701", "E712", "F841", "E722", "E741", "BLE001", "S110", "S112"]
 
 [tool.ty]
 # Configuration for Astral Ty

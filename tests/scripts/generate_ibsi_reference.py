@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from radiomics import featureextractor
 
 FIXTURE_DIR = Path(__file__).parent.parent / "fixtures" / "ibsi"

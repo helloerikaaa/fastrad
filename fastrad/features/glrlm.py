@@ -1,6 +1,7 @@
 import torch
-from fastrad.settings import FeatureSettings
+
 from fastrad.image import get_binned_image
+from fastrad.settings import FeatureSettings
 
 EPSILON = 1e-16
 

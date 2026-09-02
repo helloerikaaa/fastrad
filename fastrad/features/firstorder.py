@@ -1,4 +1,5 @@
 import torch
+
 from fastrad.settings import FeatureSettings
 
 EPSILON = 1e-16

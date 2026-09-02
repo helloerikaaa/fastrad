@@ -1,12 +1,15 @@
-import numpy as np
-import torch
-import SimpleITK as sitk
-from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
-from pathlib import Path
-import warnings
-import re
 import csv
+import re
+import warnings
+from pathlib import Path
+
+import numpy as np
+import SimpleITK as sitk
+import torch
+from radiomics import featureextractor
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def compute_icc_2_1(data_matrix):
     """
@@ -221,7 +224,7 @@ def run():
         test_mask = create_spherical_mask_t(torch.zeros_like(test_img_t), 15.0, test_spacing)
         
         base_f_res = fastrad_ext.extract(MedicalImage(test_img_t, spacing=test_spacing), Mask(test_mask, spacing=test_spacing))
-        fastrad_icc_data = {k: np.zeros((n_patients, 2)) for k in base_f_res.keys() if k != "firstorder:standard_deviation"}
+        fastrad_icc_data = {k: np.zeros((n_patients, 2)) for k in base_f_res if k != "firstorder:standard_deviation"}
         pyrad_icc_data = {}
         
         s_test_img = sitk.GetImageFromArray(test_img_t.numpy())
@@ -287,9 +290,9 @@ def run():
                 f_res1 = fastrad_ext.extract(f_img1, f_mask1)
                 f_res2 = fastrad_ext.extract(f_img2, f_mask2)
                 
-            for k in fastrad_icc_data:
-                fastrad_icc_data[k][p_idx, 0] = f_res1.get(k, 0)
-                fastrad_icc_data[k][p_idx, 1] = f_res2.get(k, 0)
+            for k, val in fastrad_icc_data.items():
+                val[p_idx, 0] = f_res1.get(k, 0)
+                val[p_idx, 1] = f_res2.get(k, 0)
                 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -316,7 +319,7 @@ def run():
             f_iccs.append(f_val)
             p_iccs.append(p_val)
             
-            cls_name, f_name = k.split(":")
+            cls_name, _f_name = k.split(":")
             per_feature_icc_records.append({
                 "feature_class": cls_name,
                 "feature_key": k,

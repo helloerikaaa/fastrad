@@ -1,13 +1,15 @@
 import os
 import warnings
 from pathlib import Path
-from typing import Union, Tuple, List
+
+import numpy as np
 import pydicom
 import torch
-import numpy as np
+
 from ..logger import logger
 
-def parse_dicom_dir(path: Union[str, Path]) -> Tuple[torch.Tensor, Tuple[float, float, float]]:
+
+def parse_dicom_dir(path: str | Path) -> tuple[torch.Tensor, tuple[float, float, float]]:
     """
     Reads a directory of DICOM files, rigorously reconstructs physical 3D geometry,
     and returns a 3D PyTorch float tensor (D, H, W) and spacing (z, y, x).
@@ -27,7 +29,7 @@ def parse_dicom_dir(path: Union[str, Path]) -> Tuple[torch.Tensor, Tuple[float, 
        or oblique acquisition is detected, an explicit UserWarning is emitted.
     """
     path = Path(path)
-    slices: List[pydicom.FileDataset] = []
+    slices: list[pydicom.FileDataset] = []
     
     for root, _, files in os.walk(path):
         for file in files:

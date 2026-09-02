@@ -1,10 +1,16 @@
-import torch
-import SimpleITK as sitk
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+import csv
+import subprocess
+import sys
 from pathlib import Path
 import subprocess
 import sys
 import csv
+
+import SimpleITK as sitk
+import torch
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple[float, float, float]):
     D, H, W = image_shape
@@ -87,7 +93,7 @@ if sys.platform == "darwin":
 else:
     print(maxrss / 1024)
 '''
-    res = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+    res = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, check=False)
     try:
         return float(res.stdout.strip())
     except ValueError:

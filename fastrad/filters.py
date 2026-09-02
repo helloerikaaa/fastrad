@@ -1,10 +1,11 @@
+import math
+
 import torch
 import torch.nn.functional as F
-from typing import Dict, List
-import math
 
 from .image import MedicalImage
 from .logger import logger
+
 
 def _get_gaussian_kernel_3d(sigma: float, size: int = 0) -> torch.Tensor:
     """
@@ -12,7 +13,7 @@ def _get_gaussian_kernel_3d(sigma: float, size: int = 0) -> torch.Tensor:
     """
     if size == 0:
         # Standard PyRadiomics kernel bounding rule (radius = ceil(3 * sigma))
-        radius = int(math.ceil(3.0 * sigma))
+        radius = math.ceil(3.0 * sigma)
         size = 2 * radius + 1
         
     grid = torch.arange(size, dtype=torch.float32)
@@ -33,7 +34,7 @@ def _get_LoG_kernel_3d(sigma: float, size: int = 0) -> torch.Tensor:
     Generates an analytical 3D Laplacian of Gaussian (LoG) spatial kernel matrices.
     """
     if size == 0:
-        radius = int(math.ceil(3.0 * sigma))
+        radius = math.ceil(3.0 * sigma)
         size = 2 * radius + 1
         
     grid = torch.arange(size, dtype=torch.float32)
@@ -55,7 +56,7 @@ def _get_LoG_kernel_3d(sigma: float, size: int = 0) -> torch.Tensor:
     log_3d = log_3d - torch.mean(log_3d)
     return log_3d
 
-def get_LoG_image(image: MedicalImage, sigmas: List[float]) -> Dict[str, MedicalImage]:
+def get_LoG_image(image: MedicalImage, sigmas: list[float]) -> dict[str, MedicalImage]:
     """
     Applies Laplacian of Gaussian (LoG) spatial filtration.
     Mimics `pyradiomics.imageoperations.getLoGImage`.
@@ -83,24 +84,24 @@ def get_LoG_image(image: MedicalImage, sigmas: List[float]) -> Dict[str, Medical
     return filtered_images
 
 
-def get_Square_image(image: MedicalImage) -> Dict[str, MedicalImage]:
+def get_Square_image(image: MedicalImage) -> dict[str, MedicalImage]:
     tensor = torch.square(image.tensor)
     return {"square": MedicalImage(tensor=tensor, spacing=image.spacing)}
 
-def get_SquareRoot_image(image: MedicalImage) -> Dict[str, MedicalImage]:
+def get_SquareRoot_image(image: MedicalImage) -> dict[str, MedicalImage]:
     tensor = torch.sqrt(torch.abs(image.tensor))
     return {"squareroot": MedicalImage(tensor=tensor, spacing=image.spacing)}
 
-def get_Logarithm_image(image: MedicalImage) -> Dict[str, MedicalImage]:
+def get_Logarithm_image(image: MedicalImage) -> dict[str, MedicalImage]:
     tensor = torch.log(torch.abs(image.tensor) + 1e-6)
     return {"logarithm": MedicalImage(tensor=tensor, spacing=image.spacing)}
 
-def get_Exponential_image(image: MedicalImage) -> Dict[str, MedicalImage]:
+def get_Exponential_image(image: MedicalImage) -> dict[str, MedicalImage]:
     tensor = torch.exp(image.tensor)
     return {"exponential": MedicalImage(tensor=tensor, spacing=image.spacing)}
 
 
-def apply_builtin_filters(image: MedicalImage, filter_types: Dict[str, Dict]) -> Dict[str, MedicalImage]:
+def apply_builtin_filters(image: MedicalImage, filter_types: dict[str, dict]) -> dict[str, MedicalImage]:
     """
     Master router handling multiple simultaneous math mappings to mirror legacy automated scaling.
     Argument format mimics standard PyRadiomics filter definition dictionaries:

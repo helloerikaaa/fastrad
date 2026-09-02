@@ -1,6 +1,8 @@
 import pytest
 import torch
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 @pytest.fixture
 def base_settings():

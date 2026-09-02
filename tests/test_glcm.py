@@ -1,8 +1,11 @@
 import os
+
 import pytest
 import SimpleITK as sitk
 from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def to_fastrad_key(pyrad_key):
     if not pyrad_key.startswith("original_glcm_"):

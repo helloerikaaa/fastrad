@@ -2,14 +2,15 @@ from pathlib import Path
 
 # Importers for each module
 from benchmarks import (
+    run_dense_performance,
     run_ibsi_compliance,
-    run_numerical_parity,
-    run_runtime_performance,
     run_memory_efficiency,
+    run_numerical_parity,
     run_reproducibility_stability,
     run_robustness,
-    run_dense_performance
+    run_runtime_performance,
 )
+
 
 def build_report():
     print("==================================================")

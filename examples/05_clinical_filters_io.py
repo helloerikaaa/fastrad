@@ -7,10 +7,13 @@ complex Mathematical Filter combinations).
 """
 
 import tempfile
+
 import numpy as np
 import SimpleITK as sitk
-from fastrad import FeatureExtractor, FeatureSettings
+
 import fastrad
+from fastrad import FeatureExtractor, FeatureSettings
+
 
 def create_dummy_data():
     """Generates synthetic bounding boxes simulating a tumor scan."""

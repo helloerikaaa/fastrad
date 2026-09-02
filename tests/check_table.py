@@ -1,5 +1,6 @@
 import re
 
+
 def parse_c_table(file_path):
     with open(file_path, "r") as f:
         content = f.read()

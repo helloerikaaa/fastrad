@@ -1,6 +1,8 @@
 import pytest
 import torch
-from fastrad import MedicalImage, Mask, FeatureSettings, DenseFeatureExtractor
+
+from fastrad import DenseFeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def test_dense_extraction_shapes():
     # Construct a dummy 5x5x5 physical volume

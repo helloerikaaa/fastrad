@@ -1,14 +1,15 @@
+import json
 import urllib.request
+from pathlib import Path
+
 import nibabel as nib
 import numpy as np
 import pytest
 import torch
-import json
-from pathlib import Path
 
-from fastrad.settings import FeatureSettings
 from fastrad.extractor import FeatureExtractor
-from fastrad.image import MedicalImage, Mask
+from fastrad.image import Mask, MedicalImage
+from fastrad.settings import FeatureSettings
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "ibsi"
 URL_IMAGE = "https://github.com/theibsi/data_sets/raw/main/ibsi_1_digital_phantom/nifti/image/phantom.nii.gz"
@@ -94,6 +95,6 @@ def test_ibsi_compliance():
             print(f"Warning: Feature {k} extracted by fastrad but not found in reference.")
             
     # Also verify we extracted everything PyRadiomics extracted (for enabled classes)
-    for k in reference_features.keys():
+    for k in reference_features:
         if not k.startswith("shape2d"):  # We didn't enable shape2d in the extractor test
             assert k in features, f"Reference feature {k} missing from fastrad output"

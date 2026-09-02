@@ -1,7 +1,8 @@
 import os
-import requests
 import zipfile
 from pathlib import Path
+
+import requests
 
 # The Cancer Imaging Archive (TCIA) REST API URLs
 TCIA_BASE_URL = "https://services.cancerimagingarchive.net/nbia-api/services/v1"
@@ -26,8 +27,7 @@ def download_series(series_uid, output_dir):
     response.raise_for_status()
     
     with open(zip_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
+        f.writelines(response.iter_content(chunk_size=8192))
             
     print(f"Extracting {zip_path}...")
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:

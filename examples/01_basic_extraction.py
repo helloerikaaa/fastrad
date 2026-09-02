@@ -10,10 +10,13 @@ Requirements:
 - pip install fastrad SimpleITK torch
 """
 
+import warnings
+
 import SimpleITK as sitk
 import torch
-import warnings
-from fastrad import MedicalImage, Mask, FeatureExtractor, FeatureSettings
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def main():
     # 1. Load your medical image and mask utilizing SimpleITK

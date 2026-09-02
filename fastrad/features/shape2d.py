@@ -1,5 +1,7 @@
 import math
+
 import torch
+
 from fastrad.settings import FeatureSettings
 
 # Marching Squares Lookup Tables
