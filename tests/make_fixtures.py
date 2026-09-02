@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pydicom
 from pydicom.dataset import FileDataset, FileMetaDataset
+from pydicom.uid import UID, ImplicitVRLittleEndian
 
 
 def create_dicom_series(out_dir, volume, is_mask=False):
@@ -11,10 +12,10 @@ def create_dicom_series(out_dir, volume, is_mask=False):
     for z in range(depth):
         filename = os.path.join(out_dir, f"{z:04d}.dcm")
         file_meta = FileMetaDataset()
-        file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2' # CT Image Storage
-        file_meta.MediaStorageSOPInstanceUID = f'1.2.3.{z}'
-        file_meta.ImplementationClassUID = '1.2.3.4'
-        file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
+        file_meta.MediaStorageSOPClassUID = UID('1.2.840.10008.5.1.4.1.1.2') # CT Image Storage
+        file_meta.MediaStorageSOPInstanceUID = UID(f'1.2.3.{z}')
+        file_meta.ImplementationClassUID = UID('1.2.3.4')
+        file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
 
         ds = FileDataset(filename, {}, file_meta=file_meta, preamble=b"\0" * 128)
         ds.PatientName = "Test^Fixture"

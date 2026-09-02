@@ -6,6 +6,8 @@ def extract_tables(file_path, out_file):
         content = f.read()
     
     m = re.search(r"static const int triTable\[128\]\[16\] = \{(.*?)\};", content, re.DOTALL)
+    if m is None:
+        raise ValueError("triTable pattern not found in source file")
     table_str = m.group(1)
     
     rows = []
