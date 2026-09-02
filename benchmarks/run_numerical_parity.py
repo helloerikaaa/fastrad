@@ -1,10 +1,13 @@
 import csv
 from pathlib import Path
-import SimpleITK as sitk
+
 import numpy as np
+import SimpleITK as sitk
 import torch
 from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def map_fastrad_to_pyrad_key(fastrad_k: str) -> tuple[str, str]:
     """Maps fastrad 'class:feature' to pyradiomics (class, feature_clean_key)."""

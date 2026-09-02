@@ -1,7 +1,9 @@
 import os
+
+import numpy as np
 import pydicom
 from pydicom.dataset import FileDataset, FileMetaDataset
-import numpy as np
+
 
 def create_dicom_series(out_dir, volume, is_mask=False):
     os.makedirs(out_dir, exist_ok=True)

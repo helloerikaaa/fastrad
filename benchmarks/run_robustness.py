@@ -1,9 +1,12 @@
-import torch
-import SimpleITK as sitk
-from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 import warnings
+
 import numpy as np
+import SimpleITK as sitk
+import torch
+from radiomics import featureextractor
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def create_edge_case(t_shape, case_type):
     mask = torch.zeros(t_shape, dtype=torch.float32)

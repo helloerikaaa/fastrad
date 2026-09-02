@@ -1,23 +1,24 @@
 import warnings
-import torch
-from .settings import FeatureSettings
-from .image import MedicalImage, Mask
-from .utils.device import resolve_device
 
+import torch
+
+from .image import Mask, MedicalImage
 from .logger import logger
+from .settings import FeatureSettings
+from .utils.device import resolve_device
 
 # Filter the isotropic spacing warning so it only appears once per runtime.
 warnings.filterwarnings("once", message=".*is not isotropic.*")
 
 from .features import (
     compute_firstorder,
-    compute_shape,
-    compute_shape2d,
     compute_glcm,
+    compute_gldm,
     compute_glrlm,
     compute_glszm,
-    compute_gldm,
-    compute_ngtdm
+    compute_ngtdm,
+    compute_shape,
+    compute_shape2d,
 )
 
 _FEATURE_MAP = {

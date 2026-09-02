@@ -1,5 +1,6 @@
 import re
 
+
 def extract_tables(file_path, out_file):
     with open(file_path, "r") as f:
         content = f.read()

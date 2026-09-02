@@ -1,7 +1,10 @@
 import math
+
 import torch
-from fastrad.settings import FeatureSettings
+
 from fastrad.features.shape_utils import calculate_mesh_features
+from fastrad.settings import FeatureSettings
+
 
 def compute(image_tensor: torch.Tensor, mask_tensor: torch.Tensor, settings: FeatureSettings) -> dict[str, float]:
     device = settings.device

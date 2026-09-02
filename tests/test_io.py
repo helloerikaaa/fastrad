@@ -1,7 +1,9 @@
 import os
+
 import torch
 
 from fastrad import load_and_align
+
 
 def test_load_and_align_dicom_series():
     """

@@ -1,8 +1,10 @@
-import torch
 import numpy as np
 import SimpleITK as sitk
+import torch
 from radiomics import featureextractor
+
 from fastrad.features.shape_utils import calculate_mesh_features
+
 
 def test_shape_utils():
     # create a simple 2x2x2 shape

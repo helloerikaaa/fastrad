@@ -1,8 +1,11 @@
 import os
+
 import pytest
 import SimpleITK as sitk
 from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 # Map Pyradiomics camel case to fastrad snake case
 def to_fastrad_key(pyrad_key):

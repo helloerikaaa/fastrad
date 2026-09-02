@@ -2,6 +2,7 @@ import os
 
 from fastrad import MedicalImage, apply_builtin_filters
 
+
 def test_builtin_filters():
     """
     Validates logical application of structural transformations exactly matching PyRadiomics parameterization keys.

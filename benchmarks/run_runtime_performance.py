@@ -1,12 +1,14 @@
+import csv
+import os
 import time
-import torch
+from pathlib import Path
+
 import numpy as np
 import SimpleITK as sitk
+import torch
 from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
-from pathlib import Path
-import os
-import csv
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
 
 N_REPETITIONS = 20
 N_WARMUP = 3

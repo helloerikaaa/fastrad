@@ -1,7 +1,9 @@
-import requests
-import zipfile
 import io
+import zipfile
 from pathlib import Path
+
+import requests
+
 
 def get_rider_pairs(limit=10):
     url = "https://services.cancerimagingarchive.net/nbia-api/services/v1/getSeries?Collection=RIDER%20Lung%20CT&Modality=CT"

@@ -10,8 +10,11 @@ This simulates evaluating 10 distinct patient IDs from the RIDER Lung CT dataset
 """
 
 import time
+
 import torch
-from fastrad import MedicalImage, Mask, FeatureExtractor, FeatureSettings
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def load_simulated_tcia_patient(patient_id: str):
     """

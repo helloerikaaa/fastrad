@@ -1,6 +1,9 @@
 import time
+
 import torch
-from fastrad import MedicalImage, Mask, FeatureSettings, DenseFeatureExtractor
+
+from fastrad import DenseFeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def run():
     print("Running Dense Voxel-Wise Hardware Extraction Performance Benchmark...")

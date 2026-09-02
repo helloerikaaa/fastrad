@@ -7,8 +7,11 @@ This example explores the specific robust configuration dials and edge-cases
 """
 
 import warnings
+
 import torch
-from fastrad import MedicalImage, Mask, FeatureExtractor, FeatureSettings
+
+from fastrad import FeatureExtractor, FeatureSettings, Mask, MedicalImage
+
 
 def create_non_isotropic_data():
     """Generates synthetic medical imagery featuring varying anisotropic spacing parameters."""
