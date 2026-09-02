@@ -143,6 +143,49 @@ Run the full scientific benchmark suite locally to regenerate the physical repor
 python benchmarks/report_generator.py
 ```
 
+## Ethics & Data Usage Declaration
+Imaging data utilized in the scientific benchmarks were obtained from publicly accessible collections on The Cancer Imaging Archive (TCIA):
+- **NSCLC-Radiomics (`LUNG1-001`)**: Single clinical lung carcinoma benchmark case with expert gross tumor volume (GTV-1) segmentation.
+- **RIDER Lung CT**: 32 subjects (10 test-retest scan pairs evaluated) for test-retest reproducibility and Intraclass Correlation Coefficient ($\text{ICC}(2,1)$) stability analysis.
+
+All collections were acquired under institutional IRB approvals and de-identified in full compliance with HIPAA regulations.
+
+## Reproducibility Archive
+The complete reproducibility archive for the revision is organized as follows:
+- **PyRadiomics Configuration**: [`benchmarks/pyradiomics_config.yaml`](benchmarks/pyradiomics_config.yaml)
+- **Feature Coverage Table**: [`benchmarks/outputs/feature_coverage.csv`](benchmarks/outputs/feature_coverage.csv)
+- **Per-Feature ICC Data**: [`benchmarks/outputs/rider_icc_per_feature.csv`](benchmarks/outputs/rider_icc_per_feature.csv)
+- **Publication Figures Generator**: [`benchmarks/generate_figures.py`](benchmarks/generate_figures.py)
+- **Pinned Environment**: [`environment.yml`](environment.yml) and [`requirements.lock`](requirements.lock)
+
+## Citation
+
+If you use `fastrad` in your research, benchmark against it, or build upon this codebase, please cite the official preprint:
+
+```bibtex
+@article{sanchez2026fastrad,
+  title     = {fastrad: A GPU-accelerated Python library for calculating radiomics features},
+  author    = {S\'anchez-Femat, Erika and Celaya-Padilla, Jos\'e-Mar\'ia and Galv\'an-Tejada, Carlos-Eric},
+  journal   = {SSRN Preprint},
+  year      = {2026},
+  doi       = {10.2139/ssrn.6436486},
+  url       = {[https://doi.org/10.2139/ssrn.6436486](https://doi.org/10.2139/ssrn.6436486)}
+```
+}
+
+## Authors & Academic Integrity
+This repository is the official upstream implementation of fastrad, developed by [Erika Sánchez-Femat](https://scholar.google.com/citations?user=aBmYpHEAAAAJ&hl), [José-María Celaya-Padilla](https://scholar.google.com/citations?user=odTyJfgAAAAJ&hl), and [Carlos-Eric Galván-Tejada](https://scholar.google.com/citations?user=lNt5La4AAAAJ&hl).
+
+
+- Official Repository: https://github.com/helloerikaaa/fastrad
+- Preprint: https://doi.org/10.2139/ssrn.6436486
+
+
+**Notice on Derivative Works and Forks**: As required by Section 4 of the Apache License 2.0, any modified or derivative versions of this codebase must retain all original copyright, patent, and attribution notices, and prominently state that the code was modified from the original fastrad project.
+
+## License
+`fastrad` is licensed under the **Apache License, Version 2.0**. See the [LICENSE](LICENSE) file for terms and conditions.
+
 ## Running Tests
 Tests assert extraction values strictly adhere to the baseline output created by PyRadiomics to ensure fidelity for scientific rigor, including compliance with the IBSI (Image Biomarker Standardisation Initiative) phantom benchmarks.
 
@@ -151,3 +194,4 @@ To run the test suite:
 pip install ".[test]"
 pytest
 ```
+
