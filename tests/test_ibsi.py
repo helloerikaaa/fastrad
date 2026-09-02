@@ -1,11 +1,13 @@
 import json
 import urllib.request
 from pathlib import Path
+from typing import cast
 
 import nibabel as nib
 import numpy as np
 import pytest
 import torch
+from nibabel.spatialimages import SpatialImage
 
 from fastrad.extractor import FeatureExtractor
 from fastrad.image import Mask, MedicalImage
@@ -51,8 +53,8 @@ def test_ibsi_compliance():
     if not img_path.exists() or not mask_path.exists():
         pytest.skip("IBSI digital phantom files not found and could not be downloaded. Skipping compliance test.")
         
-    img_ni = nib.load(str(img_path))
-    mask_ni = nib.load(str(mask_path))
+    img_ni = cast(SpatialImage, nib.load(str(img_path)))
+    mask_ni = cast(SpatialImage, nib.load(str(mask_path)))
     
     # nibabel loads data as (X, Y, Z). PyRadiomics/fastrad uses (Z, Y, X)
     img_data = np.transpose(img_ni.get_fdata(), (2, 1, 0))

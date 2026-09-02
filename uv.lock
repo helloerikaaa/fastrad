@@ -363,6 +363,11 @@ test = [
     { name = "ty" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "ty" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "cucim-cu12", marker = "extra == 'cuda'", specifier = ">=24.0" },
@@ -390,6 +395,9 @@ requires-dist = [
     { name = "ty", marker = "extra == 'test'" },
 ]
 provides-extras = ["cuda", "test", "docs"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ty", specifier = ">=0.0.29" }]
 
 [[package]]
 name = "filelock"

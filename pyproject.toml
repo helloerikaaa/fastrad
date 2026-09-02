@@ -71,6 +71,19 @@ target-version = "py312"
 ignore = ["E402", "E701", "E712", "F841", "E722", "E741", "BLE001", "S110", "S112"]
 
 [tool.ty]
-# Configuration for Astral Ty
+
 [tool.ty.environment]
-root = ["."]
+extra-paths = ["tests", "benchmarks"]
+
+[tool.ty.rules]
+unresolved-import = "warn"
+
+[[tool.ty.overrides]]
+include = ["tests/**", "benchmarks/**"]
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.29",
+]

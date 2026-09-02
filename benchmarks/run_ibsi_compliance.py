@@ -1,9 +1,11 @@
 import json
 from pathlib import Path
+from typing import cast
 
 import nibabel as nib
 import numpy as np
 import torch
+from nibabel.spatialimages import SpatialImage
 
 from fastrad.extractor import FeatureExtractor
 from fastrad.image import Mask, MedicalImage
@@ -22,8 +24,8 @@ def run():
     if not (img_path.exists() and mask_path.exists() and ref_path.exists()):
         return "Error: IBSI phantom dataset or reference not found. Run tests/test_ibsi.py first."
 
-    img_ni = nib.load(str(img_path))
-    mask_ni = nib.load(str(mask_path))
+    img_ni = cast(SpatialImage, nib.load(str(img_path)))
+    mask_ni = cast(SpatialImage, nib.load(str(mask_path)))
 
     img_data = np.transpose(img_ni.get_fdata(), (2, 1, 0))
     mask_data = np.transpose(mask_ni.get_fdata(), (2, 1, 0))
