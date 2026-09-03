@@ -1,0 +1,17 @@
+inputImage:
+  - original
+  - resampled
+features:
+  shape:
+    - Volume
+    - SurfaceArea
+  firstorder:
+    - Mean
+    - Median
+  glcm:
+    - Autocorrelation
+    - JointEntropy
+settings:
+  normalize: true
+  resampledPixelSpacing: [1, 1, 1]
+  binWidth: 25
