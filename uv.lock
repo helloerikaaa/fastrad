@@ -327,15 +327,17 @@ wheels = [
 
 [[package]]
 name = "fastrad"
-version = "2.2.0"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cupy-cuda12x" },
     { name = "loguru" },
     { name = "matplotlib" },
     { name = "nibabel" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pydicom" },
+    { name = "pyradiomics" },
     { name = "requests" },
     { name = "scipy" },
     { name = "seaborn" },
@@ -357,7 +359,6 @@ docs = [
     { name = "sphinx-rtd-theme" },
 ]
 test = [
-    { name = "pyradiomics" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "ty" },
@@ -371,6 +372,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cucim-cu12", marker = "extra == 'cuda'", specifier = ">=24.0" },
+    { name = "cupy-cuda12x", specifier = ">=14.0.1" },
     { name = "loguru" },
     { name = "matplotlib", specifier = ">=3.8.0" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=2.0.0" },
@@ -379,7 +381,7 @@ requires-dist = [
     { name = "numpydoc", marker = "extra == 'docs'" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pydicom" },
-    { name = "pyradiomics", marker = "extra == 'test'", git = "https://github.com/AIM-Harvard/pyradiomics.git?rev=v3.1.0" },
+    { name = "pyradiomics", git = "https://github.com/AIM-Harvard/pyradiomics.git?rev=8ed579383" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "requests", specifier = ">=2.33.1" },
     { name = "ruff", marker = "extra == 'test'" },
@@ -1228,14 +1230,13 @@ wheels = [
 
 [[package]]
 name = "pyradiomics"
-version = "3.0.1a1"
-source = { git = "https://github.com/AIM-Harvard/pyradiomics.git?rev=v3.1.0#6a761c4eb01905cfcb1139b0b158547c55edd4df" }
+version = "3.1.1.dev111+g8ed579383"
+source = { git = "https://github.com/AIM-Harvard/pyradiomics.git?rev=8ed579383#8ed579383b44806651c463d5e691f3b2b57522ab" }
 dependencies = [
     { name = "numpy" },
     { name = "pykwalify" },
     { name = "pywavelets" },
     { name = "simpleitk" },
-    { name = "six" },
 ]
 
 [[package]]

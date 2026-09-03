@@ -36,13 +36,22 @@ dependencies = [
     "seaborn>=0.13.0",
     "pandas>=2.0.0",
     "pyradiomics",
-    "cupy-cuda12x>=14.0.1",
 ]
 
 [project.optional-dependencies]
+# NOTE (fixed during CMPB revision review): this previously listed
+# "cucim-cu12" for GLSZM's CUDA connected-component labelling, matching
+# the manuscript's Methods description. The actual implementation
+# (fastrad/features/glszm.py) does NOT import cucim at all -- it uses
+# CuPy (`cupyx.scipy.ndimage.label` via DLPack tensor transfer) instead,
+# with a fallback to `scipy.ndimage.label` on CPU if CuPy is unavailable
+# or fails. Either the manuscript's Methods section must be corrected to
+# describe CuPy instead of cuCIM, or the code must be changed to actually
+# use cuCIM as described -- pick one and make them match. cucim-cu12 has
+# been removed here since it is not imported anywhere in the codebase.
 cuda = [
     "torch>=2.0",
-    "cucim-cu12>=24.0"
+    "cupy-cuda12x>=14.0.1"
 ]
 test = [
     "pytest",

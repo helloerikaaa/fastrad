@@ -31,10 +31,12 @@ def create_spherical_mask(image_tensor: torch.Tensor, radius_mm: float, spacing:
     mask[dist_sq <= 1.0] = 1.0
     return mask
 
-def time_pyradiomics_class(sitk_img, sitk_mask, cls: str, repetitions: int = N_REPETITIONS, threads: int = 1) -> list[float]:
+CONFIG_PATH = Path(__file__).parent.parent / "pyradiomics_config.yaml"
+
+
+def time_pyradiomics_class(sitk_img, sitk_mask, cls: str, repetitions: int = N_REPETITIONS, threads: int = 1, config_path: Path = CONFIG_PATH) -> list[float]:
     sitk.ProcessObject.SetGlobalDefaultNumberOfThreads(threads)
-    pyrad_ext = featureextractor.RadiomicsFeatureExtractor()
-    pyrad_ext.settings['binWidth'] = 25.0
+    pyrad_ext = featureextractor.RadiomicsFeatureExtractor(str(config_path))
     pyrad_ext.disableAllFeatures()
     pyrad_ext.enableFeatureClassByName(cls)
     
@@ -50,10 +52,12 @@ def time_pyradiomics_class(sitk_img, sitk_mask, cls: str, repetitions: int = N_R
         times.append(t1 - t0)
     return times
 
-def time_fastrad_class(fastrad_img, fastrad_mask, cls: str, use_gpu: bool = False, threads: int = 1, repetitions: int = N_REPETITIONS) -> list[float]:
+
+def time_fastrad_class(fastrad_img, fastrad_mask, cls: str, use_gpu: bool = False, threads: int = 1, repetitions: int = N_REPETITIONS, config_path: Path = CONFIG_PATH) -> list[float]:
     torch.set_num_threads(threads)
     device = "cuda" if (use_gpu and torch.cuda.is_available()) else "cpu"
-    f_ext = FeatureExtractor(FeatureSettings(feature_classes=[cls], bin_width=25.0, device=device))
+    settings = FeatureSettings.from_yaml(config_path, feature_classes=[cls], device=device)
+    f_ext = FeatureExtractor(settings)
     
     # Warmup with strict CUDA synchronization
     for _ in range(N_WARMUP):
@@ -147,7 +151,7 @@ def run():
     fastrad_image = MedicalImage(img_t, spacing=spacing)
     fastrad_mask_real = Mask(mask_t_real, spacing=spacing)
     
-    classes = ['firstorder', 'shape', 'glcm', 'glrlm', 'glszm', 'gldm', 'ngtdm']
+    classes = FeatureSettings.from_yaml(CONFIG_PATH).feature_classes
     
     md = []
     md.append("## Section 3: Runtime Performance & Rigorous Timing\n")

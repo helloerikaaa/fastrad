@@ -1,14 +1,29 @@
+# NOTE (fixed during CMPB revision review): this file previously specified
+# python=3.10 (pyproject.toml requires >=3.12) and pointed pip at
+# "requirements.txt", a file that does not exist in this repository (only
+# requirements.lock does).
+#
+# IMPORTANT LIMITATION THAT REMAINS UNRESOLVED: conda-forge's "pyradiomics"
+# package is a standard PyPI/conda release, NOT the exact dev commit
+# (3.1.1.dev111+g8ed579383, i.e. 111 commits past v3.1.0) that this
+# project's numerical parity and IBSI results were validated against.
+# Installing via this conda environment will NOT reproduce this project's
+# exact PyRadiomics behaviour. For faithful reproduction, use
+# `requirements.lock` (via uv or pip) instead, which pins PyRadiomics to
+# the exact git commit. Recommend removing this file entirely, or fixing it
+# to install PyRadiomics from the same git+commit source as requirements.lock,
+# before treating it as a valid alternative environment for reproducing
+# published results.
 name: fastrad-env
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.12
   - pip
   - numpy
   - pandas
   - scikit-learn
-  - pyradiomics
   - pyyaml
   - pip:
-    - -r requirements.txt
+    - -r requirements.lock

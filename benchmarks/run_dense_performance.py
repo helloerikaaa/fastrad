@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 
 import torch
@@ -7,6 +8,8 @@ from fastrad import DenseFeatureExtractor, FeatureSettings, Mask, MedicalImage
 
 def run():
     print("Running Dense Voxel-Wise Hardware Extraction Performance Benchmark...")
+    project_root = Path(__file__).parent.parent
+    config_path = project_root / "pyradiomics_config.yaml"
     md = []
     md.append("## Section 4: Dense Voxel-Wise Hardware Extraction Performance\n")
     md.append("This section evaluates the runtime extraction performance scaling of `fastrad` when evaluating sliding windows densely across a large clinical tissue volume block, producing explicit multi-channel natively tracked spatial PyTorch Tensor maps instead of single scalar representations.\n")
@@ -21,7 +24,7 @@ def run():
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    settings = FeatureSettings(feature_classes=['firstorder', 'glcm'], bin_width=25.0, device=device)
+    settings = FeatureSettings.from_yaml(config_path, feature_classes=['firstorder', 'glcm'], device=device)
     extractor = DenseFeatureExtractor(settings)
     
     md.append(f"**Hardware Evaluation Config**: {device.upper()}\n")

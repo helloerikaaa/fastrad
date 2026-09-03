@@ -28,16 +28,26 @@ def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple[float, f
     return mask
 
 def measure_peak_ram_subprocess(lib_name: str, radius: float) -> float:
-    script = f'''
+    # NOTE: each branch below imports ONLY the library it needs.
+    # A previous version of this script unconditionally imported both
+    # `radiomics` and `fastrad` (plus torch/SimpleITK) at the top of every
+    # subprocess regardless of which branch ran, which meant both the
+    # "pyrad" and "fastrad" peak-RSS measurements were dominated by the
+    # same shared import overhead (torch alone can be several hundred MB
+    # resident) and could not detect the real differential memory usage
+    # between the two libraries. Keeping the imports branch-local ensures
+    # each subprocess's peak RSS reflects only the library under test.
+    if lib_name == "pyrad":
+        script = f'''
 import os
 import sys
 import gc
 import resource
-import torch
-import SimpleITK as sitk
+import warnings
 import numpy as np
+import SimpleITK as sitk
+import torch
 from radiomics import featureextractor
-from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
 
 def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple):
     D, H, W = image_shape
@@ -45,7 +55,7 @@ def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple):
     r_z = max(1, int(radius_mm / spacing[0]))
     r_y = max(1, int(radius_mm / spacing[1]))
     r_x = max(1, int(radius_mm / spacing[2]))
-    
+
     z, y, x = torch.meshgrid(
         torch.arange(D, dtype=torch.float32),
         torch.arange(H, dtype=torch.float32),
@@ -58,31 +68,73 @@ def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple):
     return mask
 
 project_root = "{Path(__file__).parent.parent.absolute()}"
+config_path = os.path.join(project_root, "pyradiomics_config.yaml")
+img_path = os.path.join(project_root, "tests", "fixtures", "tcia", "lung1_image.nrrd")
+img_sitk = sitk.ReadImage(str(img_path))
+img_t = torch.from_numpy(sitk.GetArrayFromImage(img_sitk)).float()
+spacing = img_sitk.GetSpacing()[::-1]
+mask_t = create_spherical_mask(img_t.shape, {radius}, spacing)
+
+gc.collect()
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    pyrad_ext = featureextractor.RadiomicsFeatureExtractor(config_path)
+    m_sitk = sitk.GetImageFromArray(mask_t.numpy().astype(np.uint8))
+    m_sitk.CopyInformation(img_sitk)
+    pyrad_ext.execute(img_sitk, m_sitk)
+
+maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+if sys.platform == "darwin":
+    print(maxrss / (1024 * 1024))
+else:
+    print(maxrss / 1024)
+'''
+    else:
+        script = f'''
+import os
+import sys
+import gc
+import resource
+import numpy as np
+import torch
+import SimpleITK as sitk
+from fastrad import MedicalImage, Mask, FeatureSettings, FeatureExtractor
+
+def create_spherical_mask(image_shape, radius_mm: float, spacing: tuple):
+    D, H, W = image_shape
+    center_z, center_y, center_x = D // 2, H // 2, W // 2
+    r_z = max(1, int(radius_mm / spacing[0]))
+    r_y = max(1, int(radius_mm / spacing[1]))
+    r_x = max(1, int(radius_mm / spacing[2]))
+
+    z, y, x = torch.meshgrid(
+        torch.arange(D, dtype=torch.float32),
+        torch.arange(H, dtype=torch.float32),
+        torch.arange(W, dtype=torch.float32),
+        indexing='ij'
+    )
+    dist_sq = ((z - center_z) / r_z)**2 + ((y - center_y) / r_y)**2 + ((x - center_x) / r_x)**2
+    mask = torch.zeros(image_shape, dtype=torch.float32)
+    mask[dist_sq <= 1.0] = 1.0
+    return mask
+
+project_root = "{Path(__file__).parent.parent.absolute()}"
+config_path = os.path.join(project_root, "pyradiomics_config.yaml")
 img_path = os.path.join(project_root, "tests", "fixtures", "tcia", "lung1_image.nrrd")
 img_sitk = sitk.ReadImage(str(img_path))
 img_t = torch.from_numpy(sitk.GetArrayFromImage(img_sitk)).float()
 spacing = img_sitk.GetSpacing()[::-1]
 
-classes = ['firstorder', 'shape', 'glcm', 'glrlm', 'glszm', 'gldm', 'ngtdm']
+fastrad_settings = FeatureSettings.from_yaml(config_path, device="cpu")
 mask_t = create_spherical_mask(img_t.shape, {radius}, spacing)
 
 gc.collect()
 
-if "{lib_name}" == "pyrad":
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        pyrad_ext = featureextractor.RadiomicsFeatureExtractor()
-        pyrad_ext.settings['binWidth'] = 25.0
-        m_sitk = sitk.GetImageFromArray(mask_t.numpy().astype(np.uint8))
-        m_sitk.CopyInformation(img_sitk)
-        pyrad_ext.execute(img_sitk, m_sitk)
-else:
-    fastrad_img = MedicalImage(img_t, spacing=spacing)
-    f_mask = Mask(mask_t, spacing=spacing)
-    fastrad_settings = FeatureSettings(feature_classes=classes, bin_width=25.0, device="cpu")
-    f_ext = FeatureExtractor(fastrad_settings)
-    f_ext.extract(fastrad_img, f_mask)
+fastrad_img = MedicalImage(img_t, spacing=spacing)
+f_mask = Mask(mask_t, spacing=spacing)
+f_ext = FeatureExtractor(fastrad_settings)
+f_ext.extract(fastrad_img, f_mask)
 
 maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 if sys.platform == "darwin":
@@ -165,18 +217,20 @@ def run():
         md.append("| Feature Class | Peak VRAM Allocated (MB) |")
         md.append("|---|---|")
         
+        config_path = project_root / "pyradiomics_config.yaml"
+        base_settings = FeatureSettings.from_yaml(config_path, device="cuda")
+        classes = base_settings.feature_classes
+
         def profile_vram(classes_to_run):
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.empty_cache()
             
-            f_ext = FeatureExtractor(FeatureSettings(feature_classes=classes_to_run, bin_width=25.0, device="cuda"))
+            f_ext = FeatureExtractor(FeatureSettings.from_yaml(config_path, feature_classes=classes_to_run, device="cuda"))
             f_ext.extract(fastrad_img, f_mask)
             torch.cuda.synchronize()
             
             peak_bytes = torch.cuda.max_memory_allocated()
             return peak_bytes / (1024**2)
-            
-        classes = ["firstorder", "shape", "glcm", "glrlm", "glszm", "gldm", "ngtdm"]
         for cls in classes:
             vram = profile_vram([cls])
             md.append(f"| {cls} | {vram:.2f} |")

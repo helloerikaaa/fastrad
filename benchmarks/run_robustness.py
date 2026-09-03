@@ -1,3 +1,4 @@
+from pathlib import Path
 import warnings
 
 import numpy as np
@@ -50,6 +51,24 @@ def extract_safe(extractor_func, *args):
         err_type = type(e).__name__
         return f"{err_type}"
 
+
+def _is_exception_like(observed: str) -> bool:
+    """True if the observed behaviour string looks like a raised exception."""
+    return not observed.startswith("Graceful")
+
+
+def check_verified(expected: str, observed: str) -> str:
+    """
+    Honest pass/fail check: does the *category* of observed behaviour
+    (exception vs. graceful completion) match what was expected for this
+    edge case? This replaces a previous version of this script that
+    unconditionally wrote "Yes" for every row regardless of what actually
+    happened.
+    """
+    expected_is_exception = ("Error" in expected) or ("Exception" in expected)
+    observed_is_exception = _is_exception_like(observed)
+    return "Yes" if (expected_is_exception == observed_is_exception) else "Review"
+
 def run():
     print("Running Expanded Robustness Edge Cases Benchmark (Table 8)...")
     md = []
@@ -68,9 +87,10 @@ def run():
         "Shape Mismatch (Image != Mask)": ("shape-mismatch", "ValueError / Exception")
     }
     
-    pyrad_ext = featureextractor.RadiomicsFeatureExtractor()
-    pyrad_ext.settings['binWidth'] = 25.0
-    fastrad_settings = FeatureSettings(feature_classes=['firstorder', 'glcm'], bin_width=25.0, device="cpu")
+    project_root = Path(__file__).parent.parent
+    config_path = project_root / "pyradiomics_config.yaml"
+    pyrad_ext = featureextractor.RadiomicsFeatureExtractor(str(config_path))
+    fastrad_settings = FeatureSettings.from_yaml(config_path, device="cpu")
     
     for case_name, (case_id, expected) in cases.items():
         img_t, mask_t, spacing = create_edge_case((10, 10, 10), case_id)
@@ -91,7 +111,8 @@ def run():
         except Exception as e:
             p_res = type(e).__name__
             
-        md.append(f"| {case_name} | {expected} | {f_res} | {p_res} | Yes |")
+        verified = check_verified(expected, f_res)
+        md.append(f"| {case_name} | {expected} | {f_res} | {p_res} | {verified} |")
         
     md.append("\n\n")
     return "\n".join(md)

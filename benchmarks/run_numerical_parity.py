@@ -66,12 +66,11 @@ def run():
     fastrad_image = MedicalImage(image_tensor, spacing=spacing)
     fastrad_mask = Mask(mask_tensor, spacing=spacing)
     
-    feature_classes = ['firstorder', 'shape', 'glcm', 'glrlm', 'glszm', 'gldm', 'ngtdm']
+    config_path = project_root / "pyradiomics_config.yaml"
+    fastrad_settings = FeatureSettings.from_yaml(config_path, device="cpu")
+    feature_classes = fastrad_settings.feature_classes
     
-    pyrad_extractor = featureextractor.RadiomicsFeatureExtractor()
-    pyrad_extractor.settings['binWidth'] = 25.0
-    
-    fastrad_settings = FeatureSettings(feature_classes=feature_classes, bin_width=25.0, device="cpu")
+    pyrad_extractor = featureextractor.RadiomicsFeatureExtractor(str(config_path))
     fastrad_extractor = FeatureExtractor(fastrad_settings)
     
     fastrad_features = fastrad_extractor.extract(fastrad_image, fastrad_mask)

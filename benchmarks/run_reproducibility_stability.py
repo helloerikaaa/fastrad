@@ -182,14 +182,24 @@ def run():
     output_dir = project_root / "benchmarks" / "outputs"
     output_dir.mkdir(parents=True, exist_ok=True)
     
+    config_path = project_root / "pyradiomics_config.yaml"
+    fastrad_settings = FeatureSettings.from_yaml(config_path, device="cpu")
+    classes = fastrad_settings.feature_classes
+    fastrad_ext = FeatureExtractor(fastrad_settings)
+    pyrad_ext = featureextractor.RadiomicsFeatureExtractor(str(config_path))
+
     md = []
     md.append("## Section 5: Reproducibility and Statistical Stability\n")
     
     print("  -> Running ICC(2,1) Analysis on RIDER test-retest pairs (5.1)...")
     md.append("### 5.1 ICC Analysis on Real RIDER Scan-Rescan Pairs\n")
+    # NOTE: the actual "$N=... patient scan pairs" line is appended below,
+    # after the real number of available pairs is known, rather than being
+    # hardcoded here. A previous version of this script printed a fixed
+    # "N=5" string regardless of how many RIDER pairs were actually found
+    # on disk, so the reported cohort size never reflected reality.
     md.append("> **Statistical Protocol (Koo & Li, 2016)**:\n"
               "> - **Model**: $\\text{ICC}(2,1)$ (Two-way random effects, single rater, absolute agreement).\n"
-              "> - **Cohort**: RIDER Lung CT test-retest dataset ($N=5$ patient scan pairs, 10 volumetric scans total).\n"
               "> - **Mask Correspondence**: Spherical ROI ($r=15\\,\\text{mm}$) generated on Scan 1 and mapped into Scan 2 physical space via nearest-neighbor resampling under identity transform.\n"
               "> - **Confidence Intervals**: 95% non-parametric subject-level bootstrap (500 resamples).\n\n")
 
@@ -205,17 +215,17 @@ def run():
     if not rider_pairs:
         md.append("*No RIDER pairs available. Skipping ICC Analysis.*")
     else:
-        rider_pairs = rider_pairs[:5]
+        # NOTE: this previously hardcoded `rider_pairs[:5]`, silently
+        # discarding any additional downloaded pairs beyond the first 5
+        # regardless of how many were actually available (e.g. up to 32
+        # via download_rider_pairs.py). All available pairs are now used,
+        # and the manuscript's reported cohort size must match whatever
+        # n_patients actually prints here after a real run.
         n_patients = len(rider_pairs)
-        
-        pyrad_ext = featureextractor.RadiomicsFeatureExtractor()
-        pyrad_ext.settings['binWidth'] = 25.0
-        pyrad_ext.disableAllFeatures()
-        classes = ['firstorder', 'shape', 'glcm', 'glrlm', 'glszm', 'gldm', 'ngtdm']
-        for cls in classes:
-            pyrad_ext.enableFeatureClassByName(cls)
-            
-        fastrad_ext = FeatureExtractor(FeatureSettings(feature_classes=classes, bin_width=25.0, device="cpu"))
+        md.append(
+            f"> - **Cohort**: RIDER Lung CT test-retest dataset "
+            f"($N={n_patients}$ patient scan pairs, {2 * n_patients} volumetric scans total).\n\n"
+        )
         
         # Pre-initialize data structs
         test_img = load_dicom_series(rider_pairs[0][0])

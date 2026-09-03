@@ -1,17 +1,53 @@
-inputImage:
-  - original
-  - resampled
-features:
+# PyRadiomics and fastrad unified configuration
+#
+# IMPORTANT (fixed during CMPB revision review): this file previously set
+# `resampledPixelSpacing: [1, 1, 1]` with `interpolator: sitkBSpline`. Under
+# that config, PyRadiomics resamples every image/mask to 1x1x1mm isotropic
+# spacing internally during `.execute()`, but fastrad's FeatureExtractor has
+# NO resampling step of its own (benchmarks/run_numerical_parity.py and
+# benchmarks/run_runtime_performance.py load images directly via
+# `sitk.ReadImage` + `MedicalImage(...)`, never calling
+# `fastrad.load_and_align(..., resample_spacing=...)`). This meant
+# PyRadiomics and fastrad were being compared on two DIFFERENT physical
+# representations of the same scan (this matters a lot for LUNG1-001,
+# whose native spacing is (5.0, 0.57, 0.57) mm — highly anisotropic).
+#
+# Resampling is disabled below (resampledPixelSpacing left empty) so that
+# BOTH tools run on native, non-resampled voxel spacing. This also matches
+# the manuscript's Methods claim: "no resampling to isotropic spacing is
+# imposed by default, consistent with PyRadiomics behaviour."
+#
+# If you would rather validate WITH resampling instead, do not just add
+# resampledPixelSpacing back here — you must also update
+# benchmarks/run_numerical_parity.py and benchmarks/run_runtime_performance.py
+# to build the fastrad image/mask via `fastrad.load_and_align(img_path,
+# mask_path, resample_spacing=(1.0, 1.0, 1.0))` instead of the current raw
+# `sitk.ReadImage` + `MedicalImage(...)` construction, or the mismatch
+# described above will silently return.
+setting:
+  binWidth: 25.0
+  label: 1
+
+imageType:
+  Original: {}
+
+featureClass:
   shape:
-    - Volume
-    - SurfaceArea
   firstorder:
-    - Mean
-    - Median
   glcm:
-    - Autocorrelation
-    - JointEntropy
-settings:
-  normalize: true
-  resampledPixelSpacing: [1, 1, 1]
-  binWidth: 25
+  glrlm:
+  glszm:
+  gldm:
+  ngtdm:
+  # shape2D is intentionally NOT included here. fastrad's current shape2D
+  # implementation (fastrad/features/shape2d.py) raises ValueError unless
+  # the mask is already exactly one slice thick along the forced axis —
+  # it does NOT aggregate 2D shape features across the slices of a real
+  # 3D tumor volume (e.g. the multi-slice LUNG1-001 GTV-1 mask), despite
+  # the manuscript's Methods section currently claiming per-slice
+  # aggregation. Enabling PyRadiomics' shape2D class also requires a
+  # global `force2D: true` setting, which would change how EVERY other
+  # texture class (GLCM, GLRLM, etc.) is computed for this config — it
+  # cannot simply be added here without a second, separate extractor pass.
+  # See the manuscript's Methods/Limitations sections and the review
+  # checklist for what is required to properly validate shape2D.

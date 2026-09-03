@@ -35,11 +35,8 @@ def run():
     image = MedicalImage(torch.from_numpy(img_data).float(), spacing=spacing)
     mask = Mask(torch.from_numpy(mask_data).float(), spacing=spacing)
 
-    settings = FeatureSettings(
-        feature_classes=["firstorder", "shape", "glcm", "glrlm", "glszm", "gldm", "ngtdm"],
-        bin_width=25.0,
-        device="cpu"
-    )
+    config_path = project_root / "pyradiomics_config.yaml"
+    settings = FeatureSettings.from_yaml(config_path, device="cpu")
 
     features = FeatureExtractor(settings).extract(image, mask)
     with open(ref_path, 'r', encoding='utf-8') as f:
@@ -63,8 +60,12 @@ def run():
             else:
                 rel_dev = abs((fastrad_val - ref_val) / ref_val) * 100.0
                 
-            class_name = k.split("_")[0] if "_" in k else k.split(":")[0]
-            feature_name = k.split("_")[-1] if "_" in k else k.split(":")[-1]
+            # fastrad keys are always "{class}:{feature_name}" (e.g. "firstorder:10th_percentile").
+            # Splitting on "_" is wrong here because many feature *names* themselves contain
+            # underscores (10th_percentile, large_dependence_high_gray_level_emphasis, etc.),
+            # which previously collapsed several distinct features down to the same truncated
+            # display label (e.g. multiple "*_emphasis" features all showing as "large | emphasis").
+            class_name, feature_name = k.split(":", 1)
             
             # Formatting floats
             # E-notation is cleaner for very small or very large
