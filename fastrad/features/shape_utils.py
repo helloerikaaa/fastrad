@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from scipy.spatial import ConvexHull
 
+from fastrad.logger import logger
 from .shape_tables import gridAngles, triTable, vertList
 
 
@@ -105,7 +106,36 @@ def calculate_mesh_features(mask_tensor, spacing):
         all_vertices_list.append(a)
         all_vertices_list.append(b)
         all_vertices_list.append(c)
-        
+
+    # Mesh-closure diagnostic: for a perfectly closed, consistently-oriented
+    # mesh, the sum of signed triangle-area vectors must be exactly zero
+    # (divergence theorem). A nonzero value here means the marching-cubes
+    # mesh has a small orientation/closure inconsistency, which introduces
+    # a real (if usually small) error specifically in MeshVolume and any
+    # feature derived from it (Sphericity, SurfaceVolumeRatio,
+    # Compactness1/2, SphericalDisproportion) -- SurfaceArea itself is
+    # unaffected, since it does not depend on triangle orientation.
+    # This was found via multi-case validation on real clinical ROI
+    # geometry (never triggered by the synthetic sphere or IBSI phantom,
+    # which are too geometrically regular) -- see the manuscript's
+    # Discussion/Limitations for the full writeup. Not fixed here: the
+    # root cause is believed to be in the triTable/vertList winding
+    # convention for symmetric ("mirrored") marching-cubes cube
+    # configurations, and a wrong fix here would silently produce
+    # different-but-still-incorrect volumes, which is worse than
+    # surfacing the inconsistency explicitly.
+    mesh_closure_error = torch.norm(area_vector_sum).item()
+    if total_area > 0 and (mesh_closure_error / total_area) > 1e-4:
+        logger.warning(
+            f"Marching-cubes mesh may not be fully closed/consistently "
+            f"oriented (closure error {mesh_closure_error:.4f} relative to "
+            f"total surface area {total_area:.1f}). MeshVolume and features "
+            f"derived from it (Sphericity, SurfaceVolumeRatio, Compactness1/2, "
+            f"SphericalDisproportion) may show larger-than-expected deviation "
+            f"from PyRadiomics on this mask; SurfaceArea and all other shape "
+            f"features are unaffected."
+        )
+
     if len(all_vertices_list) > 0:
         all_vertices = torch.cat(all_vertices_list, dim=0)
         unique_vertices = torch.unique(all_vertices, dim=0)
@@ -140,15 +170,29 @@ def calculate_mesh_features(mask_tensor, spacing):
                 centered = pts_np - pts_np.mean(axis=0)
                 plane_rank = np.linalg.matrix_rank(centered)
                 
-                if plane_rank < 2:
-                    # If points are colinear, calculate all pairwise distances
-                    pts_t = torch.tensor(pts_np, device=pts.device)
+                if plane_rank < 2 or len(pts_np) < 3:
+                    # If points are colinear, or there simply aren't enough
+                    # points to form a 2D hull, calculate all pairwise
+                    # distances directly (always correct, just less
+                    # efficient than a hull for large point sets).
                     d = torch.cdist(torch.tensor(pts_np), torch.tensor(pts_np))
                 else:
-                    # If plane slice is truly 2D, only calculate convex hull distances
-                    hull = ConvexHull(pts_np)
-                    hull_pts = torch.tensor(pts_np[hull.vertices], device=pts.device)
-                    d = torch.cdist(hull_pts, hull_pts)
+                    # If plane slice is truly 2D, only calculate convex hull distances.
+                    # NOTE: matrix_rank's floating-point tolerance can classify a set
+                    # of points as "non-collinear" (rank >= 2) even when they are
+                    # numerically too close/degenerate for Qhull to build a valid
+                    # simplex -- this was observed on real clinical ROI geometry
+                    # (not on synthetic spheres or the IBSI phantom, which are too
+                    # geometrically regular to trigger it). Fall back to the
+                    # always-correct pairwise distance calculation if Qhull fails,
+                    # rather than letting a rare, otherwise-valid mask crash
+                    # extraction entirely.
+                    try:
+                        hull = ConvexHull(pts_np)
+                        hull_pts = torch.tensor(pts_np[hull.vertices], device=pts.device)
+                        d = torch.cdist(hull_pts, hull_pts)
+                    except Exception:
+                        d = torch.cdist(torch.tensor(pts_np), torch.tensor(pts_np))
             
                 max_2d_diameters[i] = max(max_2d_diameters[i], d.max().item())
 
@@ -167,5 +211,6 @@ def calculate_mesh_features(mask_tensor, spacing):
         "Maximum3DDiameter": max_3d_diameter,
         "Maximum2DDiameterSlice": max_2d_slice,
         "Maximum2DDiameterColumn": max_2d_col,
-        "Maximum2DDiameterRow": max_2d_row
+        "Maximum2DDiameterRow": max_2d_row,
+        "MeshClosureError": mesh_closure_error,
     }

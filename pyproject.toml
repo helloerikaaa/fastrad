@@ -58,6 +58,12 @@ test = [
     "ruff",
     "ty",
 ]
+data-prep = [
+    # Only needed to run benchmarks/download_tcia_sample.py, which
+    # converts a real RTSTRUCT segmentation to a binary mask. Not needed
+    # to use fastrad itself.
+    "rt-utils",
+]
 docs = [
     "sphinx>=7.0.0",
     "sphinx-rtd-theme>=2.0.0",

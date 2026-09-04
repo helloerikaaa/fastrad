@@ -46,9 +46,16 @@ from run_numerical_parity import map_fastrad_to_pyrad_key  # noqa: E402
 # (ideally spanning different nodule sizes and, if feasible, a non-lung
 # anatomical site) before running this script.
 CASES: list[str] = [
-    # "LUNG1-002",
-    # "LUNG1-003",
-    # ...
+    # Pre-populated from list_tcia_patients.py output (all 15 checked
+    # candidates had CT+RTSTRUCT). IMPORTANT: after running
+    # download_tcia_sample.py, check its printed "Label check" line for
+    # each case -- remove any case here that didn't print "OK" (i.e. its
+    # mask wasn't exactly [0, 1]) before running this script.
+    "LUNG1-002",
+    "LUNG1-003",
+    "LUNG1-004",
+    "LUNG1-005",
+    "LUNG1-006",
 ]
 
 
@@ -88,6 +95,7 @@ def validate_case(case_id: str, img_path: Path, mask_path: Path, config_path: Pa
     abs_diffs = []
     n_within = 0
     n_total = 0
+    outliers = []  # (fastrad_key, pyrad_key, fastrad_val, pyrad_val, diff)
     for k, fastrad_val in fastrad_features.items():
         if k == "firstorder:standard_deviation":
             continue
@@ -99,6 +107,13 @@ def validate_case(case_id: str, img_path: Path, mask_path: Path, config_path: Pa
             n_total += 1
             if diff <= 1e-4:
                 n_within += 1
+            else:
+                outliers.append((k, pyrad_key, fastrad_val, pyrad_features[pyrad_key], diff))
+
+    if outliers:
+        print(f"    OUTLIERS for {case_id}:")
+        for fk, pk, fv, pv, d in sorted(outliers, key=lambda x: -x[4]):
+            print(f"      {fk} (pyrad: {pk}): fastrad={fv:.6f}, pyradiomics={pv:.6f}, diff={d:.6f}")
 
     n_voxels = int(mask_tensor.sum().item())
     return {

@@ -168,8 +168,15 @@ def load_dicom_series(dir_path):
     reader.SetFileNames(dicom_names)
     return reader.Execute()
 
-def apply_perturbations(img_tensor):
-    noise = img_tensor + torch.randn_like(img_tensor) * 20.0
+def apply_perturbations(img_tensor, seed: int = 42):
+    # NOTE: previously used torch.randn_like() with no fixed seed, so
+    # Gaussian-noise drift results varied between runs (observed: 10.91%
+    # in one run, 9.80% in another) purely due to different random noise
+    # draws, not any change in fastrad or PyRadiomics behaviour. Seeded
+    # here for reproducibility; re-run and update the manuscript's
+    # perturbation table with this seeded result as the final figure.
+    generator = torch.Generator().manual_seed(seed)
+    noise = img_tensor + torch.randn(img_tensor.shape, generator=generator) * 20.0
     shifted = torch.roll(img_tensor, shifts=(2, 2, 2), dims=(0, 1, 2))
     return {"Gaussian Noise (sigma=20HU)": noise, "Rigid Translation (2 voxels)": shifted}
 
